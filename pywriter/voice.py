@@ -51,15 +51,19 @@ MODEL_URL = f"https://alphacephei.com/vosk/models/{DEFAULT_MODEL}.zip"
 # voice repository on Hugging Face). Any other voice from
 # https://huggingface.co/rhasspy/piper-voices can be added by dropping its .onnx and
 # .onnx.json files into the models/piper folder.
+# Training data for each voice comes from its MODEL_CARD in the Piper voice library.
+# Voices trained from scratch on public-domain or donated recordings are listed first.
 PIPER_VOICES = {
-    "en_US-lessac-medium": "US English, female, clear and neutral",
-    "en_US-amy-medium": "US English, female, warm",
-    "en_US-ryan-high": "US English, male, high quality",
-    "en_US-joe-medium": "US English, male, relaxed",
-    "en_US-hfc_female-medium": "US English, female, bright",
-    "en_GB-alba-medium": "British English, female (Scottish)",
-    "en_GB-northern_english_male-medium": "British English, male (Northern)",
-    "en_GB-cori-high": "British English, female, high quality",
+    "en_US-ljspeech-high": "US English, female · public-domain LibriVox volunteer recordings (LJ Speech), "
+                           "trained from scratch",
+    "en_GB-cori-high": "British English, female · public-domain LibriVox volunteer recordings, trained from scratch",
+    "en_US-joe-medium": "US English, male · voice donated under CC0, built on a CC0 base voice",
+    "en_US-ljspeech-medium": "US English, female · same data as ljspeech-high, smaller and faster",
+    "en_US-lessac-medium": "US English, female · licensed research recordings (Blizzard 2013, "
+                           "non-commercial licence)",
+    "en_US-ryan-high": "US English, male · RyanSpeech research dataset (CC BY-NC-SA, non-commercial)",
+    "en_GB-alba-medium": "British English, female (Scottish) · CC BY recordings, built on the Hi-Fi TTS base voice",
+    "en_GB-northern_english_male-medium": "British English, male · CC BY-SA recordings, built on the lessac voice",
 }
 
 
@@ -110,6 +114,7 @@ class Speaker(QObject):
 
     started = Signal()
     finished = Signal()
+    spoke = Signal(str)   # every text spoken aloud (for the voice transcript)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -125,6 +130,7 @@ class Speaker(QObject):
         self.pitch = 0.0    # -1.0 .. 1.0
         self.volume = 1.0
         self.voice_name = ""
+        self.output_device: int | None = None   # sounddevice index; None = system default
         self.set_engine("")
 
     # ---------------------------------------------------------------- engine
@@ -171,7 +177,8 @@ class Speaker(QObject):
         return names
 
     def apply_settings(self, rate: float, volume: float, voice_name: str, engine: str = "",
-                       pitch: float = 0.0) -> None:
+                       pitch: float = 0.0, output_device: int | None = None) -> None:
+        self.output_device = output_device
         self.set_engine(engine)
         self.rate, self.volume, self.voice_name, self.pitch = rate, volume, voice_name, pitch
         if self._tts is not None:
@@ -203,8 +210,12 @@ class Speaker(QObject):
         if not text:
             self.finished.emit()
             return
+        self.spoke.emit(text)
         if self.engine == "piper":
             self._say_piper(text)
+            return
+        if self.engine == "sapi" and self.output_device is not None and sd is not None:
+            self._say_sapi_routed(text)   # render, then play on the chosen speaker
             return
         if self._tts is not None:
             self._tts.stop()
@@ -272,18 +283,61 @@ class Speaker(QObject):
                 rate = chunk.sample_rate
                 if self.pitch:  # simple pitch shift by resampling playback rate
                     rate = int(rate * (1.0 + 0.25 * self.pitch))
-                sd.play(np.asarray(audio), rate)
+                sd.play(np.asarray(audio), rate, device=self.output_device)
                 while sd.get_stream().active:
                     if stop.wait(0.05):
                         sd.stop()
                         return
         self._run_thread(work, text)
 
+    def _say_sapi_routed(self, text: str) -> None:
+        def work(text: str, stop: threading.Event) -> None:
+            import os
+            import tempfile
+            import wave as _wave
+            import numpy as np
+            try:
+                import comtypes  # type: ignore
+                comtypes.CoInitialize()
+            except Exception:
+                pass
+            import pyttsx3  # type: ignore
+            eng = pyttsx3.init("sapi5")
+            for v in eng.getProperty("voices"):
+                if self.voice_name and v.name.startswith(self.voice_name.replace(" Desktop", "")):
+                    eng.setProperty("voice", v.id)
+                    break
+            eng.setProperty("rate", int(190 * (1 + self.rate * 0.5)))
+            eng.setProperty("volume", max(0.0, min(1.0, self.volume)))
+            fd, path = tempfile.mkstemp(suffix=".wav")
+            os.close(fd)
+            try:
+                eng.save_to_file(text, path)
+                eng.runAndWait()
+                with _wave.open(path) as w:
+                    sr, ch = w.getframerate(), w.getnchannels()
+                    audio = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+                if ch > 1:
+                    audio = audio.reshape(-1, ch)
+                if stop.is_set():
+                    return
+                sd.play(audio, int(sr * (1.0 + 0.25 * self.pitch)), device=self.output_device)
+                while sd.get_stream().active:
+                    if stop.wait(0.05):
+                        sd.stop()
+                        return
+            finally:
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
+        self._run_thread(work, text)
+
     def stop(self) -> None:
         if self._tts is not None:
             self._tts.stop()
         self._stop_flag.set()
-        if self.engine == "piper" and sd is not None:
+        if (self.engine == "piper" or self.output_device is not None) and sd is not None:
             try:
                 sd.stop()
             except Exception:
@@ -378,9 +432,13 @@ class _ListenWorker(QObject):
     error = Signal(str)
     stopped = Signal()
 
-    def __init__(self, device: int | None):
+    def __init__(self, device: int | None, processing: dict | None = None, record_path=None,
+                 record_fmt: str = ""):
         super().__init__()
         self.device = device
+        self.processing = processing or {}
+        self.record_path = record_path
+        self.record_fmt = record_fmt
         self._running = False
 
     @Slot()
@@ -399,6 +457,17 @@ class _ListenWorker(QObject):
             def cb(indata, frames, t, status):
                 q.put(bytes(indata))
 
+            from .audio import SessionRecorder, VoiceProcessor
+            proc = VoiceProcessor(noise_reduction=self.processing.get("noise_reduction", False),
+                                  gate=self.processing.get("gate", False),
+                                  compressor=self.processing.get("compressor", True))
+            recorder = None
+            rec_proc = None
+            if self.record_fmt and self.record_path:
+                recorder = SessionRecorder(self.record_path, self.record_fmt)
+                # recordings get the full chain incl. the gate, which keeps files quiet between words
+                rec_proc = VoiceProcessor(noise_reduction=self.processing.get("noise_reduction", False),
+                                          gate=True, compressor=self.processing.get("compressor", True))
             self._running = True
             last_voice = time.monotonic()
             last_tick = 0.0
@@ -406,17 +475,14 @@ class _ListenWorker(QObject):
                                    device=self.device, callback=cb):
                 while self._running:
                     try:
-                        data = q.get(timeout=0.25)
+                        raw = q.get(timeout=0.25)
                     except queue.Empty:
-                        data = b""
+                        raw = b""
+                    data = proc.process(raw) if raw else b""
+                    if recorder is not None and raw:
+                        recorder.write(rec_proc.process(raw))
                     if data:
-                        # RMS level for the meter (int16 little-endian)
-                        import array
-                        a = array.array("h", data)
-                        if a:
-                            rms = (sum(x * x for x in a[::8]) / max(1, len(a[::8]))) ** 0.5
-                            lvl = min(1.0, rms / 6000.0)
-                            self.level.emit(lvl)
+                        self.level.emit(proc.last_level)
                         if rec.AcceptWaveform(data):
                             text = json.loads(rec.Result()).get("text", "").strip()
                             if text:
@@ -434,6 +500,8 @@ class _ListenWorker(QObject):
                 tail = json.loads(rec.FinalResult()).get("text", "").strip()
                 if tail:
                     self.final.emit(tail)
+            if recorder is not None:
+                recorder.close()
         except Exception as e:
             self.error.emit(f"Microphone error: {e}")
         self.stopped.emit()
@@ -468,6 +536,9 @@ class Listener(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.device: int | None = None
+        self.processing: dict = {"noise_reduction": False, "gate": False, "compressor": True}
+        self.record_fmt = ""            # '', 'wav', 'flac' or 'mp3'
+        self.record_path_fn = None      # callable(fmt) -> Path for a new recording
         self._thread: QThread | None = None
         self._worker: _ListenWorker | None = None
 
@@ -486,7 +557,8 @@ class Listener(QObject):
             self.error.emit(stt_status())
             return False
         self._thread = QThread()
-        self._worker = _ListenWorker(self.device)
+        path = self.record_path_fn(self.record_fmt) if (self.record_fmt and self.record_path_fn) else None
+        self._worker = _ListenWorker(self.device, dict(self.processing), path, self.record_fmt)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.partial.connect(self.partial)

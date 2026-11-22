@@ -35,7 +35,7 @@ for unused in ("torch", "torchvision", "torchaudio", "scipy", "pandas", "matplot
                "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore", "PySide6.QtQuick",
                "PySide6.QtQml", "PySide6.QtCharts", "PySide6.QtDataVisualization", "PySide6.QtPdf"):
     args.append(f"--exclude-module={unused}")
-for optional in ("piper", "onnxruntime", "jellyfish"):
+for optional in ("piper", "onnxruntime", "jellyfish", "llama_cpp", "soundfile", "pycaw", "comtypes"):
     try:
         __import__(optional)
         args.append(f"--collect-all={optional}")

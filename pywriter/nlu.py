@@ -724,6 +724,175 @@ class Interpreter:
         return None
 
 
+    # ================================================================ local AI actions
+    COMMAND_RE = re.compile(r"^\s*(?:undo|help|open|show|go to|tell me about|who is|what is|describe|read|"
+                            r"interview|start|delete|remove|add|create|new|change|set|update)\b", re.I)
+
+    def wants_rules(self, text: str) -> bool:
+        """Commands and follow-up answers are handled by the fast built-in rules."""
+        return bool(self.pending) or bool(self.COMMAND_RE.match(text))
+
+    @staticmethod
+    def _grounded(value: str, said: str) -> bool:
+        """True if a value is (mostly) the writer's own words - the model may only file, not write."""
+        words = re.findall(r"[a-z0-9']+", value.lower())
+        if not words:
+            return False
+        said_words = set(re.findall(r"[a-z0-9']+", said.lower()))
+        hits = sum(1 for w in words if w in said_words)
+        return hits / len(words) >= 0.6
+
+    def handle_actions(self, text: str, actions: list, spoken: bool = False) -> Reply | None:
+        """Apply filing actions proposed by the local AI model. Returns None (so the caller
+        falls back to the built-in rules) if nothing usable was proposed."""
+        self._spoken = spoken
+        if not actions:
+            return None
+        valid_kinds = set(KINDS) - {"project"}
+        msgs: list[str] = []
+        changed: list[str] = []
+        created_chars: list[str] = []
+        loc_rel = {"lives in", "born in", "located in", "works in", "happens in", "based in"}
+        for a in actions[:12]:
+            if not isinstance(a, dict):
+                continue
+            op = a.get("op")
+            name = (a.get("name") or "").strip()
+            if op == "create":
+                kind = a.get("kind") if a.get("kind") in valid_kinds else "character"
+                if not name:
+                    continue
+                e = self.store.find_by_name(name, kind)
+                if e:
+                    self.focus = e.id
+                    continue
+                eid = self.store.create_entity(kind, self._clean_name(name), source="talk-ai")
+                self.focus = eid
+                changed.append(eid)
+                msgs.append(f"Added {self._n(eid)} as a new {KINDS[kind][1].lower()}.")
+                if kind == "character":
+                    created_chars.append(eid)
+            elif op == "set":
+                eid = self._lookup(name) if name else self.focus
+                field_ = re.sub(r"[^a-z_]", "", (a.get("field") or "").lower().replace(" ", "_"))
+                value = (a.get("value") or "").strip()
+                if not eid or not field_ or not value:
+                    continue
+                e = self.store.get(eid)
+                if field_ == "tier":
+                    tier = next((t for t, pat in TIER_WORDS.items() if re.search(rf"\b(?:{pat})\b", value.lower())),
+                                value.lower() if value.lower() in ("primary", "secondary", "tertiary") else "")
+                    if tier:
+                        self.store.set_field(eid, "tier", tier, source="talk-ai")
+                        msgs.append(f"{e.label} is a {tier_phrase(tier)}.")
+                        changed.append(eid)
+                        created_chars = [c for c in created_chars if c != eid]
+                    continue
+                rel_fields = {"location", "home", "residence", "lives_in", "birthplace", "parent", "parents",
+                              "mentors", "siblings", "allies", "enemies", "friends", "relatives", "children",
+                              "partners", "spouse"}
+                if field_ in rel_fields or field_ in REL_WORDS or field_.rstrip("s") in REL_WORDS:
+                    continue  # places and relationships are filed as links, not text fields
+                if not self._grounded(value, text):
+                    continue  # not the writer's words (often repeated from earlier): never file it
+                before = e.get(field_)
+                self._set_or_append(eid, field_, value)
+                if self.store.get(eid).get(field_) == before:
+                    continue  # already recorded
+                self.focus = eid
+                changed.append(eid)
+                msgs.append(f"Added to {e.label}'s {label_for(self.lib, self.store, e.kind, field_).lower()}.")
+            elif op == "link":
+                a_id = self._lookup(name) if name else self.focus
+                target = (a.get("target") or "").strip()
+                rel = (a.get("relation") or "related to").strip().lower()
+                rel = REL_WORDS.get(rel, rel)
+                if not a_id or not target:
+                    continue
+                said = text.lower()
+                tgt_words = [w for w in re.findall(r"[a-z']+", target.lower()) if len(w) > 2]
+                b_known = self._lookup(target)
+                b_name = self._n(b_known).lower() if b_known else target.lower()
+                mentioned = any(w in said for w in tgt_words) or any(
+                    w in said for w in re.findall(r"[a-z']+", b_name) if len(w) > 2)
+                a_name = self._n(a_id).lower()
+                a_mentioned = any(w in said for w in re.findall(r"[a-z']+", a_name) if len(w) > 2) or \
+                    re.search(r"\b(she|he|they|her|his|their|him|them)\b", said) or a_id == self.focus
+                if not mentioned or not a_mentioned:
+                    continue  # a link repeated from earlier in the conversation
+                b_id = b_known
+                if not b_id:
+                    kind = "location" if rel in loc_rel else "group" if rel in ("member of", "leader of") \
+                        else "character"
+                    b_id = self.store.create_entity(kind, self._clean_name(target), source="talk-ai")
+                    msgs.append(f"Added {self._n(b_id)} as a new {KINDS[kind][1].lower()}.")
+                a_e = self.store.get(a_id, with_fields=False)
+                if rel == "located in" and a_e.kind == "location":
+                    made = self.store.set_field(a_id, "parent", b_id, source="talk-ai")
+                else:
+                    made = self.store.link(a_id, b_id, rel, source="talk-ai")
+                if not made:
+                    continue  # already linked
+                changed += [a_id, b_id]
+                msgs.append(f"Noted: {self._n(b_id)} is {self._n(a_id)}'s {rel}." if rel not in loc_rel
+                            else f"Noted that {self._n(a_id)} {rel_phrase(rel)} {self._n(b_id)}.")
+                self.focus = a_id
+            elif op in ("open", "describe"):
+                eid = self._lookup(name) if name else self.focus
+                if eid:
+                    self.focus = eid
+                    return self._log_reply(Reply(spoken_summary(self.store, eid),
+                                                 open_entity=eid if op == "open" else None))
+            elif op == "interview":
+                eid = self._lookup(name) if name else None
+                if eid:
+                    e = self.store.get(eid)
+                    return self._log_reply(Reply(f"Starting the interview for {e.label}.",
+                                                 start_interview=(e.kind, eid)))
+                kind = a.get("kind") if a.get("kind") in valid_kinds else ""
+                if kind:
+                    return self._log_reply(Reply(f"Starting a new {KINDS[kind][1].lower()} interview.",
+                                                 start_interview=(kind, None)))
+            elif op == "note":
+                eid = self._lookup(name) if name else None
+                target = eid or self._keep_note_target()
+                self.store.add_note(target, self._orig_sentence(text), source="talk-ai")
+                changed.append(target)
+                msgs.append(f"I've kept that as a note on {self._n(target)}.")
+            elif op == "ask" and a.get("value") and not msgs:
+                q = str(a["value"]).strip()
+                # ignore "questions" that just echo the writer's words back
+                if q.endswith("?") and not self._grounded(q.rstrip("?"), text):
+                    return self._log_reply(Reply(q[:300]))
+        if not msgs:
+            return None  # nothing usable: the built-in rules take over (and keep a note if needed)
+        for eid in created_chars:
+            e = self.store.get(eid)
+            if e and not e.tier:
+                self.pending = _Pending("ask_tier", entity_id=eid)
+                msgs.append(f"Is {e.label} a main character, a secondary character, or a minor character?")
+                break
+        return self._log_reply(Reply(" ".join(dict.fromkeys(msgs)), changed=list(dict.fromkeys(changed))))
+
+    def _keep_note_target(self) -> str:
+        return self.focus if self.focus and self.store.get(self.focus) else self.store.project_entity().id
+
+    def _log_reply(self, r: Reply) -> Reply:
+        if r.text:
+            self.store.log_conversation("pywriter", r.text)
+        return r
+
+    def known_names(self) -> list[str]:
+        return sorted({n for _, _, n in self.store.all_names()}, key=str.lower)
+
+    def recent(self) -> list[tuple[str, str]]:
+        return [(row["speaker"], row["text"]) for row in self.store.conversation(10)]
+
+    def focus_name(self) -> str:
+        e = self.store.get(self.focus, with_fields=False) if self.focus else None
+        return e.label if e else ""
+
+
 # ==================================================================== utilities
 
 def split_sentences(text: str) -> list[str]:

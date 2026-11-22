@@ -82,7 +82,10 @@ Offline and local. No AI text generation; speech and language tools only *interp
 - [x] Import of the official SSA names.zip for a larger first-name list
 
 ### Ideas for later
-- [ ] Optional local language model plugin (llama.cpp) for richer Talk-mode understanding (extraction only, never writing)
+- [x] Optional local language model (llama.cpp) for richer Talk-mode understanding: extraction only, never writing; offered on first run; download, enable, disable and delete from Tools ▸ Local AI assistant
+- [x] Voice transcript file per project; communication-device defaults with device pickers; mic noise reduction, gate and compressor; optional WAV/FLAC/MP3 recording
+- [ ] Ethically sourced assistant model: instruction-tune an openly licensed base model (Pleias 3B Preview on Common Corpus, or EleutherAI Comma v0.1 on the Common Pile) using openly licensed instruction data, quantize to GGUF, and offer it alongside or instead of Qwen. Pleias-RAG 350M was tested and couldn't do the filing task.
+- [ ] Speech recognition trained only on consented data (Mozilla Common Voice and LibriSpeech), e.g. a k2/icefall Zipformer through sherpa-onnx, as an alternative to Vosk
 - [ ] Talk-mode patterns for other languages
 - [ ] Scene/chapter outline view linked to timeline events
 - [ ] Mobile companion (would need a rewrite of the UI layer, e.g. Flutter, reusing the YAML packs and database format)

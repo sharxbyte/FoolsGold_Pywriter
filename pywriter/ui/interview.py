@@ -427,7 +427,14 @@ class InterviewDialog(QDialog):
         q = self.iv.current
         if q is None:
             return
+        before = self.iv.answers.get(q.key, "")
         self.iv.answer(self._answer_text())
+        after = self.iv.answers.get(q.key, "")
+        if after and after != before:
+            who = self.iv.answers.get("name", "") or self.iv.default_name
+            label = q.option_label(after) if q.type in ("choice", "yesno") else after
+            self.ctx.transcript.write(f"Interview answer ({self.iv.pack.title} · {who} · {q.display_label})",
+                                      label)
         if q.type == "yesno" and isinstance(self.answer, QLineEdit):
             detail = self.answer.text().strip()
             if detail:

@@ -12,6 +12,15 @@ venv/
 pywriter/baby-names.csv
 *.zip
 
+# downloaded models are fetched by the app on request; never commit them
+*.gguf
+*.part
+*.onnx
+*.onnx.json
+vosk-model*/
+models/
+audio/
+
 # never commit personal projects or backups
 *.pwdb
 *.pwdb-journal

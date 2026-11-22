@@ -1,13 +1,20 @@
 # Core
 PySide6>=6.6
 PyYAML>=6.0
+numpy>=1.24
 
-# Speech recognition (offline)
+# Speech recognition and audio (offline)
 vosk>=0.3.45
 sounddevice>=0.4.6
+soundfile>=0.12          # saving recordings as FLAC / MP3 (WAV works without it)
+pycaw>=20230407; sys_platform == "win32"   # find Windows' default communication devices
 
 # Optional but recommended
-jellyfish>=1.0        # better "sounds-like" name matching (falls back to Soundex)
-networkx>=3.0         # nicer automatic map layout (falls back to a circle)
-piper-tts>=1.2        # natural neural voices (falls back to system voices)
-pyttsx3>=2.90         # fallback speech when Qt has no speech engine
+jellyfish>=1.0           # better "sounds-like" name matching (falls back to Soundex)
+networkx>=3.0            # nicer automatic map layout (falls back to a circle)
+piper-tts>=1.2           # natural neural voices (falls back to system voices)
+pyttsx3>=2.90            # classic Windows voices on a chosen speaker; fallback speech
+
+# Optional local AI assistant for Talk mode (only used if you download a model in the app).
+# Prebuilt CPU wheels:  pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+llama-cpp-python>=0.3

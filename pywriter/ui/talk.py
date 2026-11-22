@@ -56,6 +56,8 @@ class TalkPanel(QWidget):
         ctx.listener.level.connect(lambda v: self._listening and self.meter.set_level(v))
         ctx.listener.error.connect(lambda m: self._listening and self.status.setText(m))
         ctx.speaker.finished.connect(self._on_speech_done)
+        ctx.assistant.result.connect(self._on_ai_result)
+        self._pending_ai = None
         ctx.bus.reloaded.connect(self.reset)
         self.reset()
 
@@ -89,15 +91,52 @@ class TalkPanel(QWidget):
             return
         self.input.clear()
         self._append("writer", text)
+        if not spoken:
+            self.ctx.transcript.write("Typed in Talk", text)
+        asst = self.ctx.assistant
+        if asst.usable and not self.interp.wants_rules(text):
+            # let the local AI interpret free-form remarks (off the UI thread)
+            self.ctx.store.log_conversation("writer", text)
+            self.status.setText("Thinking…")
+            self._pending_ai = (asst.request(text, self.interp.known_names(), self.interp.recent(),
+                                             self.interp.focus_name()), text, spoken)
+            return
         try:
             reply = self.interp.handle(text, spoken=spoken)
         except Exception as e:  # never crash the conversation
             import traceback
             traceback.print_exc()
             self.ctx.store.add_note(self.ctx.store.project_entity().id, text, source="talk")
-            reply = None
             self._append("pywriter", f"Sorry, I got confused ({e}). I've kept what you said as a note.")
             return
+        self._show_reply(reply)
+
+    def _on_ai_result(self, rid: int, actions) -> None:
+        pending = getattr(self, "_pending_ai", None)
+        if not pending or pending[0] != rid:
+            return
+        self._pending_ai = None
+        _, text, spoken = pending
+        self.status.setText("Listening…" if self._listening else "")
+        reply = None
+        try:
+            reply = self.interp.handle_actions(text, actions, spoken=spoken) if actions else None
+            if reply is None:  # fall back to the built-in rules
+                self.interp._spoken = spoken
+                reply = self.interp._handle(text)
+                if reply.text:
+                    self.ctx.store.log_conversation("pywriter", reply.text)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.ctx.store.add_note(self.ctx.store.project_entity().id, text, source="talk")
+            self._append("pywriter", f"Sorry, I got confused ({e}). I've kept what you said as a note.")
+            return
+        self._show_reply(reply)
+
+    def _show_reply(self, reply) -> None:
+        if reply.text and not self.speak_replies.isChecked():
+            self.ctx.transcript.write("PyWriter replied", reply.text)  # spoken replies are logged as said
         if reply.text:
             self._append("pywriter", reply.text)
             if self.speak_replies.isChecked() and self.ctx.speaker.available:

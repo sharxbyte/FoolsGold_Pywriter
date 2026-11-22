@@ -86,8 +86,8 @@ def main(argv: list[str] | None = None) -> int:
     win.show()
     if splash:
         QTimer.singleShot(900, lambda: splash.finish(win))
-    if new_project and "--no-guide" not in argv:
-        QTimer.singleShot(400, win._offer_guided)
+    if "--no-guide" not in argv:
+        QTimer.singleShot(400, lambda: win.first_run_offers(new_project))
     return app.exec()
 
 

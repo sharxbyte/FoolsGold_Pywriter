@@ -191,6 +191,7 @@ class MainWindow(QMainWindow):
         tools.addAction("Back up now", lambda: self.snapshot("manual", force=True, announce=True))
         tools.addAction("Undo last change", self._undo, QKeySequence("Ctrl+Shift+Z"))
         tools.addAction("Settings…", self.show_settings, QKeySequence("Ctrl+,"))
+        tools.addAction("Local AI assistant…", self.show_ai)
         tools.addAction("Diagnostics…", self.show_diagnostics)
 
         hm = mb.addMenu("&Help")
@@ -310,11 +311,17 @@ class MainWindow(QMainWindow):
             return
         for p in self.pages.values():
             p.save_pending()
+            p._save_timer.stop()
+            p._refresh_timer.stop()
         if hasattr(self, "manuscript"):
             self.manuscript.save()
+            self.manuscript._save_timer.stop()
+        self._export_timer.stop()
         self.export_bible()
         self.snapshot("close")
-        self.ctx.store.close()
+        self.ctx.transcript.write("Session", "Project closed")
+        store, self.ctx.store = self.ctx.store, None   # nothing may touch the closed database
+        store.close()
 
     def _offer_guided(self) -> None:
         if VoicePrompt(self.ctx, "Your project is ready. Would you like to start the Guided Story Interview "
@@ -525,6 +532,18 @@ class MainWindow(QMainWindow):
         w = self.tabs.currentWidget()
         HistoryDialog(self.ctx, w.entity_id if isinstance(w, EntityPage) else None, self).exec()
         self._update_status()
+
+    def show_ai(self, first_run: bool = False) -> None:
+        from .ai_dialog import LocalAIDialog
+        LocalAIDialog(self.ctx, self, first_run=first_run).exec()
+        self.ctx.set("ai/offered", True)
+
+    def first_run_offers(self, new_project: bool) -> None:
+        """Offer the optional local AI once, then (for a new project) the guided interview."""
+        if not self.ctx.get("ai/offered", False, bool):
+            self.show_ai(first_run=True)
+        if new_project:
+            self._offer_guided()
 
     def show_settings(self) -> None:
         if SettingsDialog(self.ctx, self).exec():

@@ -64,10 +64,46 @@ Models are stored in your user data folder (see *Where things are stored*).
 Go to **Tools ▸ Settings ▸ Reading voice**:
 
 - **Engine:** choose *Windows modern voices*, *Windows classic voices*, or *Natural neural voices (Piper)*.
-- **Get natural voices…** downloads Piper voices (about 60–110 MB each) from the public [Rhasspy Piper voice library](https://huggingface.co/rhasspy/piper-voices). Try *en_US-lessac*, *en_US-amy*, *en_US-ryan-high* or *en_GB-cori-high*.
+- **Get natural voices…** downloads Piper voices (about 60–110 MB each) from the public [Rhasspy Piper voice library](https://huggingface.co/rhasspy/piper-voices). The list shows where each voice's training recordings came from. *en_US-ljspeech-high*, *en_GB-cori-high* and *en_US-joe* were trained only on public-domain or donated recordings.
 - **Speed**, **pitch** and **volume** apply to every engine. Use **Test voice** to hear the result.
 
 To add more Windows voices, go to Windows **Settings ▸ Time & language ▸ Speech ▸ Manage voices ▸ Add voices**.
+
+### Microphone and speaker
+
+PyWriter finds the audio devices of whoever is running it each time it starts. Nothing is tied to one computer.
+
+- **Windows:** by default it uses the devices Windows has set as the *default communication device*. That's the microphone and speaker Windows uses for calls, as set in *Sound settings ▸ More sound settings*.
+- **Linux:** it follows the PipeWire/PulseAudio default chosen in your system sound settings.
+- **macOS:** it uses the system default.
+
+To pick a specific microphone or speaker, go to **Settings ▸ Listening ▸ Microphone** and **Settings ▸ Reading voice ▸ Speaker**. Use **Refresh devices** after plugging something in. Devices are remembered by name, so a choice survives reboots and USB re-plugging. If a chosen device is unplugged, PyWriter falls back to the default.
+
+> Speaker choice applies to natural (Piper) and classic Windows voices. Modern Windows voices always play on the system default speaker. If your communication speaker differs from the default, PyWriter picks an engine it can route to it.
+
+**Mic processing** is applied before speech recognition, and each option can be switched on or off:
+
+| Option | What it does | Default |
+|---|---|---|
+| Compressor | Evens out loud and quiet speech so soft words are still recognized | On |
+| Background noise reduction | Learns steady background noise (fans, hum, hiss) and removes it. Helps in noisy rooms, but can slightly reduce accuracy in quiet ones. | Off |
+| Noise gate | Mutes the mic between words. It's always applied to saved recordings; for recognition it can clip very quiet words. | Off |
+
+### Voice transcript and recordings
+
+- Every project keeps **`<Title>_voice-transcript.txt`** in its folder. It's an append-only, timestamped record of everything PyWriter heard, everything it said, everything typed in Talk mode, and every interview answer. Lines are only ever added, never changed or removed.
+- **Audio recording** is off by default; only the text transcript is kept. In **Settings ▸ Listening ▸ Save audio**, choose WAV (largest), FLAC (lossless, about half the size) or MP3 (smallest). Each listening session is then saved in the project's `audio/` folder.
+
+### Optional local AI assistant
+
+PyWriter can use a small language model, **run entirely on your computer**, to understand freer phrasing in Talk mode. It never writes: it may only return filing actions in a fixed format, and any value that isn't mostly your own words is replaced by your original sentence. It sends nothing anywhere, and your conversation is stored only in your project.
+
+PyWriter offers it once on first run. You can open it any time from **Tools ▸ Local AI assistant…**. That window explains:
+- what each model is and how it was trained,
+- the disk and memory it needs (about 1 GB of disk and 2 GB of memory for the recommended model),
+- how to **enable** it (download, then tick the box), **disable** it (untick; the file is kept) or **delete** it (frees the disk space).
+
+The assistant needs the `llama-cpp-python` package, which is included in requirements.txt.
 
 ---
 
@@ -204,6 +240,35 @@ PyWriter/
     resources/             icon, splash
     ui/                    Qt windows
 ```
+
+## Where the models' training data comes from
+
+PyWriter aims to rely on models trained on data that was paid for, licensed or volunteered. Here is what we know:
+
+| Component | Training data | Notes |
+|---|---|---|
+| Piper voices *ljspeech*, *cori* | Public-domain LibriVox recordings by volunteer readers; trained from scratch | Recommended |
+| Piper voice *joe* | Voice donated under CC0, built on a CC0 base voice | Recommended |
+| Piper voices *lessac*, *ryan* | Licensed research recordings (non-commercial licences) | Consented recordings, but not for commercial use |
+| Other Piper voices | Openly licensed recordings, fine-tuned from one of the voices above | The model card for each voice is linked from the voice library |
+| Qwen2.5 language models (optional assistant) | Large web-scraped corpus (Apache 2.0 weights) | The only small model tested that does the filing task well. Clearly labelled, and entirely optional. |
+| Pleias language models | Common Corpus: public-domain and permissively licensed text only (Apache 2.0) | Tested (350M) but not offered: it's built for answering questions from documents and couldn't do the filing task. Without the optional assistant, Talk mode uses PyWriter's built-in rules, which involve no trained model at all. |
+| Vosk speech recognition models | Alpha Cephei doesn't publish the training sources for the small English model | Accuracy is reported on LibriSpeech and TED-LIUM test sets |
+
+Fully consent-based speech-recognition training data exists: [Mozilla Common Voice](https://commonvoice.mozilla.org) (donated, CC0) and LibriSpeech (volunteer LibriVox readings). Small offline recognizers trained only on these exist in research and the k2/icefall project, but none ships in Vosk's format yet. See ROADMAP.md.
+
+## Where downloads come from
+
+PyWriter doesn't include any speech or AI models. When you choose one, the app downloads and installs it into your user data folder, with a progress bar, a cancel button, and resume if interrupted:
+
+| Download | Source | Where it's offered in the app |
+|---|---|---|
+| Speech recognition (Vosk) | [alphacephei.com/vosk/models](https://alphacephei.com/vosk/models) | Voice ▸ Download speech model… |
+| Natural voices (Piper) | [huggingface.co/rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) | Settings ▸ Reading voice ▸ Get natural voices… |
+| Local AI assistant (Qwen2.5 1.5B / 0.5B, GGUF) | [Qwen2.5-1.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF) · [Qwen2.5-0.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF) | Tools ▸ Local AI assistant… (also offered once on first run) |
+| Name lists | Bundled; optional official [SSA names.zip](https://www.ssa.gov/oact/babynames/names.zip) | Settings ▸ Import SSA names.zip… |
+
+You can also place files by hand: Vosk model folders and `piper/` voices go in the models folder, and AI models go in `models/llm/`.
 
 ## Credits and data sources
 

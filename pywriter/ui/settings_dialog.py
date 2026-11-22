@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, 
                                QSlider, QSpinBox, QVBoxLayout)
 from PySide6.QtCore import Qt
 
+from .. import audio
 from .. import names as names_mod
 from ..voice import (LARGE_MODEL, MODELS, PIPER_VOICES, ModelDownloader, PiperDownloader, engines,
                      input_devices, installed_models, model_path, piper_available, piper_installed, stt_status)
@@ -90,6 +91,19 @@ class SettingsDialog(QDialog):
         vrow.addWidget(self.get_voices)
         vf.addRow("Voice", vrow)
         self._fill_voices()
+        srow = QHBoxLayout()
+        self.speaker_dev = QComboBox()
+        srow.addWidget(self.speaker_dev, 1)
+        refresh = QPushButton("Refresh devices")
+        refresh.setToolTip("Look for newly connected microphones and speakers")
+        refresh.clicked.connect(self._refresh_devices)
+        srow.addWidget(refresh)
+        vf.addRow("Speaker", srow)
+        note = QLabel("Speaker choice applies to natural (Piper) and classic Windows voices. Modern Windows "
+                      "voices always play on the system default speaker.")
+        note.setWordWrap(True)
+        note.setObjectName("muted")
+        vf.addRow(note)
         self.rate = QSlider(Qt.Horizontal)
         self.rate.setRange(-10, 10)
         self.rate.setValue(int(ctx.get("voice/rate", 0.0, float) * 10))
@@ -110,11 +124,30 @@ class SettingsDialog(QDialog):
         li = QGroupBox("Listening")
         vf = QFormLayout(li)
         self.mic = QComboBox()
-        self.mic.addItem("(system default)", -1)
-        for i, name in input_devices():
-            self.mic.addItem(name, i)
-        self.mic.setCurrentIndex(max(0, self.mic.findData(ctx.get("voice/input_device", -1, int))))
         vf.addRow("Microphone", self.mic)
+        self._fill_devices()
+        self.nr = QCheckBox("Background noise reduction")
+        self.nr.setToolTip("Learns the steady background sound (fans, hum, hiss) and removes it. Helps in noisy "
+                           "rooms; in a quiet room it can slightly reduce accuracy, so it's off by default.")
+        self.nr.setChecked(ctx.get("audio/noise_reduction", False, bool))
+        self.gate = QCheckBox("Noise gate (silence between words)")
+        self.gate.setToolTip("Mutes the microphone when you're not speaking. Always used for saved recordings; "
+                             "for recognition it can clip very quiet words, so it's off by default.")
+        self.gate.setChecked(ctx.get("audio/gate", False, bool))
+        self.comp = QCheckBox("Compressor (evens out loud and quiet speech)")
+        self.comp.setToolTip("Brings soft speech up and keeps loud speech from distorting. Recommended.")
+        self.comp.setChecked(ctx.get("audio/compressor", True, bool))
+        proc = QHBoxLayout()
+        for w in (self.nr, self.gate, self.comp):
+            proc.addWidget(w)
+        vf.addRow("Mic processing", proc)
+        self.record = QComboBox()
+        for k, label in audio.RECORD_FORMATS.items():
+            self.record.addItem(label, k)
+        self.record.setCurrentIndex(max(0, self.record.findData(ctx.get("audio/record_format", "") or "")))
+        self.record.setToolTip("Recordings are saved in the project's 'audio' folder, one file per listening "
+                               "session. The text transcript is always kept.")
+        vf.addRow("Save audio", self.record)
         self.silence = QSpinBox()
         self.silence.setRange(3, 60)
         self.silence.setSuffix(" seconds")
@@ -150,6 +183,10 @@ class SettingsDialog(QDialog):
         ssa.clicked.connect(self._import_ssa)
         nrow.addWidget(ssa)
         vf.addRow(nrow)
+        ai = QPushButton("Local AI assistant (optional)…")
+        ai.setToolTip("Optional small local model for freer Talk-mode phrasing. Runs offline; never writes.")
+        ai.clicked.connect(self._open_ai)
+        vf.addRow(ai)
         lay.addWidget(li)
 
         bk = QGroupBox("Backups")
@@ -173,6 +210,32 @@ class SettingsDialog(QDialog):
         bb.rejected.connect(self.reject)
         lay.addWidget(bb)
 
+    def _fill_devices(self) -> None:
+        for combo, kind in ((self.mic, "input"), (self.speaker_dev, "output")):
+            current = self.ctx.device_setting(kind) if combo.count() == 0 else (combo.currentData() or "")
+            combo.clear()
+            combo.addItem(audio.describe_setting(audio.COMM, kind) + "  (recommended)", audio.COMM)
+            combo.addItem("System default device", audio.SYSTEM)
+            for _, name in audio.list_devices(kind):
+                combo.addItem(name, name)
+            i = combo.findData(current)
+            if i < 0 and current:
+                combo.addItem(f"{current}  (not connected)", current)
+                i = combo.count() - 1
+            combo.setCurrentIndex(max(0, i))
+
+    def _refresh_devices(self) -> None:
+        if self.ctx.listener.listening:
+            QMessageBox.information(self, "Devices", "Stop listening first, then refresh.")
+            return
+        audio.rescan_devices()
+        self._fill_devices()
+
+    def _open_ai(self) -> None:
+        from .ai_dialog import LocalAIDialog
+        LocalAIDialog(self.ctx, self).exec()
+        self.ctx.set("ai/offered", True)
+
     def _fill_voices(self) -> None:
         eng = self.engine.currentData() or ""
         self.voice.clear()
@@ -191,7 +254,9 @@ class SettingsDialog(QDialog):
         labels = [f"{k}  —  {PIPER_VOICES[k]}" + ("  (installed)" if k in have else "") for k in keys]
         choice, ok = QInputDialog.getItem(self, "Natural voices",
                                           "Each voice is about 60–110 MB, downloaded once from the public\n"
-                                          "Rhasspy Piper voice library. Which voice?", labels, 0, False)
+                                          "Rhasspy Piper voice library. The training data for each voice is\n"
+                                          "shown; the first three were trained only on public-domain or\n"
+                                          "donated recordings. Which voice?", labels, 0, False)
         if not ok:
             return
         voice = keys[labels.index(choice)]
@@ -229,9 +294,12 @@ class SettingsDialog(QDialog):
             QMessageBox.warning(self, "Name lists", str(e))
 
     def _test(self) -> None:
+        sp = self.speaker_dev.currentData() or ""
         self.ctx.speaker.apply_settings(self.rate.value() / 10, self.volume.value() / 10,
                                         self.voice.currentData() or "", engine=self.engine.currentData() or "",
-                                        pitch=self.pitch.value() / 10)
+                                        pitch=self.pitch.value() / 10,
+                                        output_device=None if sp == audio.SYSTEM else
+                                        audio.resolve_device(sp, "output"))
         self.ctx.speaker.say("Hello. This is how your interview questions will sound. "
                              "Tell me about your main character.")
 
@@ -245,7 +313,12 @@ class SettingsDialog(QDialog):
         c.set("voice/stt_model", self.stt_model.currentData() or "")
         c.set("voice/rate", self.rate.value() / 10)
         c.set("voice/volume", self.volume.value() / 10)
-        c.set("voice/input_device", self.mic.currentData())
+        c.set("voice/input_device", self.mic.currentData() or "")
+        c.set("voice/output_device", self.speaker_dev.currentData() or "")
+        c.set("audio/noise_reduction", self.nr.isChecked())
+        c.set("audio/gate", self.gate.isChecked())
+        c.set("audio/compressor", self.comp.isChecked())
+        c.set("audio/record_format", self.record.currentData() or "")
         c.set("voice/silence_seconds", self.silence.value())
         c.set("voice/narration_default", self.narr_default.isChecked())
         c.set("backup/keep_all", self.keep_all.isChecked())
