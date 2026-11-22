@@ -1,0 +1,53 @@
+pack: item
+kind: item
+project_types: [Fiction]
+title: Item / Artifact Interview
+intro: "Let's describe an important object, such as a weapon, heirloom, letter, vehicle, or artifact."
+outro: "Thank you. {name} is saved."
+another: "Is there another important item you'd like to add?"
+
+sections:
+  - id: basics
+    title: The Object
+    questions:
+      - key: name
+        label: Name
+        type: text
+        required: true
+        ask: "What is the item called?"
+
+      - key: item_type
+        label: Type
+        type: text
+        ask: "What kind of object is {name}?"
+
+      - key: look
+        label: Appearance
+        ask: "What does {name} look like? Think about size, material, color, and any markings."
+
+      - key: origin
+        label: Origin
+        ask: "Where did {name} come from, and who made it?"
+
+      - key: powers
+        label: Powers or functions
+        when: "project.speculative == 'yes'"
+        ask: "Does {name} have any special powers or functions? What are their limits or costs?"
+
+      - key: owner
+        label: Owner
+        type: entities
+        kind: character
+        relation: owned by
+        ask: "Who owns or carries {name} when the story begins?"
+
+      - key: kept_at
+        label: Kept at
+        type: entity
+        kind: location
+        relation: located in
+        ask: "Where is {name} usually kept?"
+
+      - key: significance
+        label: Significance
+        ask: "Why does {name} matter to the story, and how does it change hands or change meaning?"

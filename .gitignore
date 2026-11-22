@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.spec
+.venv/
+venv/
+.vscode/
+.idea/
+
+# raw downloads (the compacted lists live in pywriter/data/)
+pywriter/baby-names.csv
+*.zip
+
+# never commit personal projects or backups
+*.pwdb
+*.pwdb-journal
+backups/
+PyWriter Projects/
+
+# secrets
+*.key
+*passphrase*
+*Passphrase*
+.env

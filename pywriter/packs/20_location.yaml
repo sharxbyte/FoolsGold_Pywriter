@@ -1,0 +1,258 @@
+# Fiction location interview. Every place has a level (room ... multiverse) and a
+# parent place, so the setting forms a tree you can browse and map. Questions unlock
+# based on the level and on the World and Scope answers.
+pack: location
+kind: location
+project_types: [Fiction]
+title: Location Interview
+intro: "Let's describe a place in your story."
+outro: "Thank you. {name} has been added to your setting."
+another: "Is there another location you'd like to add?"
+
+sections:
+  - id: basics
+    title: What and Where
+    questions:
+      - key: name
+        label: Name
+        type: text
+        required: true
+        ask: "What is this place called? If it has no name, give it a short description, such as 'the old mill'."
+
+      - key: level
+        label: Level
+        type: choice
+        options: levels
+        allow_other: false
+        ask: "What kind of place is {name}? Choose the closest level: a room, a building, an outdoor site, a neighborhood, a settlement, a region, a country, a continent, a planet, a star system, a galaxy, a universe, a dimension, a timeline, or a multiverse."
+
+      - key: place_type
+        label: Type of place
+        type: text
+        ask: "What kind of {level} is {name}? For example: a tavern, a starship bridge, a fishing village, a desert kingdom, or a pocket dimension."
+
+      - key: parent
+        label: Located in
+        type: entity
+        kind: location
+        relation: located in
+        when: "level != 'multiverse'"
+        ask: "Where is {name} located within the larger setting? Name the place that contains it, such as the city a building is in, or the planet a country is on. Leave it blank if {name} is the largest place in the story."
+
+      - key: position
+        label: Position within the larger place
+        when: "answered('parent')"
+        ask: "Where exactly within {parent} is {name}? Describe how someone would find it."
+
+      - key: importance
+        label: Importance to the story
+        ask: "Why does {name} matter to the story?"
+
+  - id: senses
+    title: Through the Senses
+    questions:
+      - key: look
+        label: Appearance
+        ask: "When a character first arrives at {name}, what do they see?"
+
+      - key: sounds
+        label: Sounds
+        type: text
+        ask: "What does {name} sound like?"
+
+      - key: smells
+        label: Smells
+        type: text
+        ask: "What does {name} smell like?"
+
+      - key: mood
+        label: Mood and atmosphere
+        type: text
+        ask: "What feeling or mood should {name} give the reader?"
+
+  - id: built
+    title: The Space Itself
+    when: "answered('level') and rank(level) <= rank('site')"
+    questions:
+      - key: purpose
+        label: Purpose
+        ask: "What is {name} used for, and who uses it?"
+
+      - key: owner
+        label: Owner or controller
+        type: entities
+        kind: character
+        relation: owns
+        reverse: true
+        ask: "Who owns or controls {name}? Name the people. You can add groups on the group's own page."
+
+      - key: layout
+        label: Layout
+        ask: "Describe the layout of {name}. What areas does it have, and how are they connected?"
+
+      - key: access
+        label: Entrances and access
+        ask: "How do people get in and out of {name}, and is access restricted in any way?"
+
+      - key: condition
+        label: Condition
+        type: text
+        ask: "What condition is {name} in? New, well kept, worn, ruined?"
+
+      - key: contents
+        label: Notable contents
+        ask: "What notable objects, furniture, or equipment can be found in {name}?"
+
+  - id: community
+    title: People and Society
+    when: "rank(level) >= rank('district') and rank(level) <= rank('continent')"
+    questions:
+      - key: population
+        label: Population
+        ask: "Roughly how many people live in {name}, and who are they?"
+
+      - key: governance
+        label: Government and power
+        ask: "Who governs or controls {name}, and how do they hold power?"
+
+      - key: economy
+        label: Economy
+        ask: "How do people in {name} make a living? What does it produce, trade, or lack?"
+
+      - key: culture
+        label: Culture and customs
+        ask: "What customs, traditions, festivals, or laws shape daily life in {name}?"
+
+      - key: daily_life
+        label: Daily life
+        ask: "What is an ordinary day like for someone who lives in {name}?"
+
+      - key: social_tensions
+        label: Social tensions
+        ask: "What divisions or tensions exist among the people of {name}, such as class, faith, or politics?"
+
+      - key: landmarks
+        label: Landmarks
+        ask: "What are the most notable landmarks in {name}?"
+
+  - id: land
+    title: The Land
+    when: "rank(level) >= rank('site') and rank(level) <= rank('planet')"
+    questions:
+      - key: terrain
+        label: Terrain
+        ask: "Describe the land around {name}: its terrain, water, plants, and natural features."
+
+      - key: climate
+        label: Climate and seasons
+        ask: "What is the climate and weather like in {name}, and how do the seasons change it?"
+
+      - key: resources
+        label: Natural resources
+        when: "rank(level) >= rank('region')"
+        ask: "What natural resources are plentiful or scarce in {name}?"
+
+      - key: wildlife
+        label: Wildlife
+        when: "rank(level) >= rank('region')"
+        ask: "What animals, creatures, or plant life are notable in {name}?"
+
+  - id: world
+    title: A Whole World
+    when: "rank(level) >= rank('planet') and rank(level) <= rank('universe')"
+    questions:
+      - key: world_physics
+        label: How it differs from Earth
+        when: "level == 'planet'"
+        ask: "How does {name} differ from Earth? Think about gravity, length of day, moons, sky, and atmosphere."
+
+      - key: peoples
+        label: Peoples and species
+        ask: "What peoples or species live in {name}?"
+
+      - key: powers
+        label: Major powers
+        ask: "What are the major nations, empires, or factions in {name}, and how do they get along?"
+
+      - key: world_history
+        label: History
+        ask: "What major events have shaped the history of {name}?"
+
+      - key: travel
+        label: Travel
+        when: "rank(level) >= rank('star_system')"
+        ask: "How do people travel across {name}, if they can at all? How long does it take and what does it cost?"
+
+      - key: magic_here
+        label: Magic or technology here
+        when: "project.speculative == 'yes'"
+        ask: "How does magic or advanced technology show up in {name}? Is it common, rare, feared, or controlled?"
+
+  - id: otherworld
+    title: Beyond Ordinary Reality
+    when: "level in ['dimension', 'timeline', 'multiverse']"
+    questions:
+      - key: reality_rules
+        label: Rules of reality
+        ask: "How do the rules of reality differ in {name}? Think about physics, time, magic, and cause and effect."
+
+      - key: entry
+        label: Getting in and out
+        ask: "How does someone enter or leave {name}?"
+
+      - key: relation_to_main
+        label: Relation to the main world
+        ask: "How does {name} relate to the main reality of the story?"
+
+      - key: divergence
+        label: Point of divergence
+        when: "level == 'timeline'"
+        ask: "Where does {name} split from the main timeline, and what is different because of it?"
+
+  - id: story
+    title: In the Story
+    questions:
+      - key: residents
+        label: Characters found here
+        type: entities
+        kind: character
+        relation: lives in
+        reverse: true
+        ask: "Which characters live in {name} or are often found there?"
+
+      - key: events_here
+        label: Events here
+        type: entities
+        kind: event
+        relation: happens in
+        reverse: true
+        ask: "What key events in the story happen at {name}? Give each a short name, separated by commas."
+
+      - key: dangers
+        label: Dangers
+        ask: "What dangers, hazards, or conflicts does {name} present to the characters?"
+
+      - key: secrets
+        label: Secrets
+        ask: "Does {name} hide any secrets that the characters or readers might discover?"
+
+      - key: changes
+        label: How it changes
+        ask: "How does {name} change over the course of the story?"
+
+      - key: history_flash
+        label: In flashbacks
+        when: "project.flashbacks == 'yes'"
+        ask: "Does {name} appear in flashbacks or flash-forwards? How is it different then?"
+
+      - key: research
+        label: Research and real-world basis
+        when: "project.based_on_real == 'yes'"
+        ask: "Is {name} based on a real place? What research, visits, or sources are you drawing on?"
+
+      - key: sublocations
+        label: Has places inside
+        type: yesno
+        spawn: location
+        when: "level != 'room'"
+        ask: "Are there notable places inside {name}, such as districts, buildings, or rooms, that you'd like to describe next?"

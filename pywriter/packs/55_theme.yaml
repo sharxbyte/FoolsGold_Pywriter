@@ -1,0 +1,44 @@
+pack: theme
+kind: theme
+project_types: [Fiction, Non-Fiction, Biography]
+title: Theme Interview
+intro: "Let's explore a theme: an idea the work keeps returning to."
+outro: "Thank you. The theme {name} is saved."
+another: "Is there another theme you'd like to explore?"
+
+sections:
+  - id: theme
+    title: The Theme
+    questions:
+      - key: name
+        label: Theme
+        type: text
+        required: true
+        ask: "Name the theme in a few words, such as 'redemption', 'found family', or 'the price of power'."
+
+      - key: statement
+        label: What the work says
+        ask: "What does the work say about {name}? Try to put it in a sentence."
+
+      - key: expression
+        label: How it's expressed
+        ask: "How does {name} show up in the events, the characters, or the setting?"
+
+      - key: explicit
+        label: Explicit or implicit
+        type: choice
+        ask: "Is {name} stated openly, or left for the reader to discover?"
+        options:
+          - {value: explicit, label: "Stated openly", aliases: [explicit, openly, stated]}
+          - {value: implicit, label: "Left for the reader to discover", aliases: [implicit, subtle, hidden]}
+
+      - key: embodied_by
+        label: Characters who embody it
+        type: entities
+        kind: character
+        relation: related to
+        ask: "Which characters or people embody or challenge {name}?"
+
+      - key: symbols
+        label: Symbols
+        ask: "Are there images, objects, or motifs that represent {name}?"

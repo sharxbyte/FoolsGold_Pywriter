@@ -1,0 +1,133 @@
+pack: plot
+kind: plot
+project_types: [Fiction]
+title: Plot Thread Interview
+intro: "Let's map out a storyline. Start with the main plot; you can add subplots afterwards."
+outro: "Thank you. The {name} thread is saved."
+another: "Is there a subplot or another storyline you'd like to add?"
+
+sections:
+  - id: basics
+    title: The Storyline
+    questions:
+      - key: name
+        label: Thread name
+        type: text
+        required: true
+        ask: "What would you like to call this storyline? For the central story, 'Main plot' is fine."
+
+      - key: thread_type
+        label: Main plot or subplot
+        type: choice
+        ask: "Is {name} the main plot, or a subplot?"
+        options:
+          - {value: main, label: "Main plot", aliases: [main, central, primary]}
+          - {value: subplot, label: "Subplot", aliases: [subplot, sub plot, secondary, side]}
+
+      - key: summary
+        label: Summary
+        ask: "Summarize {name} in a few sentences, from start to finish."
+
+      - key: protagonists
+        label: Driving characters
+        type: entities
+        kind: character
+        relation: involves
+        ask: "Whose storyline is this? Name the characters who drive it."
+
+      - key: goal
+        label: Goal
+        ask: "What are they trying to achieve in {name}?"
+
+      - key: opposition
+        label: Opposition
+        type: entities
+        kind: character
+        relation: involves
+        ask: "Who or what is working against them? Name any antagonists."
+
+      - key: antagonist_motive
+        label: Antagonist's motivation
+        when: "answered('opposition')"
+        ask: "What does the opposition want, and why do they believe they are right?"
+
+      - key: connection
+        label: Connection to main plot
+        when: "thread_type == 'subplot'"
+        ask: "How does {name} connect to, echo, or complicate the main plot?"
+
+  - id: structure
+    title: Shape of the Story
+    questions:
+      - key: opening
+        label: Opening
+        when: "thread_type != 'subplot'"
+        ask: "How does the story open, and what draws the reader in on the first pages?"
+
+      - key: inciting_incident
+        label: Inciting incident
+        ask: "What event sets {name} in motion?"
+
+      - key: stakes
+        label: Stakes
+        ask: "What is at stake? What happens if the characters fail?"
+
+      - key: obstacles
+        label: Obstacles and complications
+        ask: "What obstacles and complications make things harder as the story goes on?"
+
+      - key: midpoint
+        label: Midpoint
+        when: "thread_type != 'subplot'"
+        ask: "What happens around the middle of the story that changes everything?"
+
+      - key: twists
+        label: Twists and reveals
+        ask: "Are there any twists, surprises, or reveals in {name}?"
+
+      - key: dark_moment
+        label: Darkest moment
+        when: "thread_type != 'subplot'"
+        ask: "What is the darkest moment, when all seems lost?"
+
+      - key: climax
+        label: Climax
+        ask: "What is the climax of {name}, the moment of greatest tension?"
+
+      - key: resolution
+        label: Resolution
+        ask: "How is {name} resolved, and how does the world look afterwards?"
+
+      - key: open_questions
+        label: Open questions
+        ask: "What questions, if any, are left unanswered at the end?"
+
+  - id: meaning
+    title: Meaning and Feel
+    when: "thread_type != 'subplot'"
+    questions:
+      - key: themes
+        label: Themes
+        type: entities
+        kind: theme
+        relation: explores
+        ask: "What themes does the story explore? Name them, such as 'loyalty' or 'the cost of ambition'."
+
+      - key: symbols
+        label: Symbols and motifs
+        ask: "Are there any symbols or recurring motifs?"
+
+      - key: pacing
+        label: Pacing
+        type: text
+        ask: "How should the story feel to read: fast and tense, slow and immersive, or a mix?"
+
+      - key: ending_type
+        label: Kind of ending
+        type: choice
+        ask: "What kind of ending are you aiming for?"
+        options:
+          - {value: happy, label: "Happy", aliases: [happy, triumphant, uplifting]}
+          - {value: bittersweet, label: "Bittersweet", aliases: [bittersweet, mixed]}
+          - {value: tragic, label: "Tragic", aliases: [tragic, sad, dark]}
+          - {value: open, label: "Open or ambiguous", aliases: [open, ambiguous, cliffhanger]}

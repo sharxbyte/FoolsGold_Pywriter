@@ -1,0 +1,103 @@
+# Timeline events, for all project types. Wording adapts to the project type, and
+# flashback/timeline questions only appear if World and Scope unlocked them.
+pack: event
+kind: event
+project_types: [Fiction, Non-Fiction, Biography]
+title: Event Interview
+intro: "Let's add an event to the timeline."
+outro: "Thank you. {name} is on the timeline."
+another: "Is there another event you'd like to add to the timeline?"
+
+sections:
+  - id: basics
+    title: What Happened
+    questions:
+      - key: name
+        label: Event name
+        type: text
+        required: true
+        ask: "Give this event a short name, such as 'The fire at the mill' or 'Graduation'."
+
+      - key: summary
+        label: What happens
+        ask: "Describe what happens during {name}."
+
+      - key: when
+        label: When
+        type: text
+        ask: "When does {name} happen? Give a date, an age, a season, or a point relative to other events."
+
+      - key: order
+        label: Story order
+        type: number
+        ask: "Where does {name} fall in order? Give a number, such as 1 for the earliest event. You can drag events into order on the Timeline later."
+
+      - key: timeline
+        label: Timeline
+        type: text
+        when: "project.alt_timelines == 'yes'"
+        ask: "Which timeline does {name} take place in?"
+
+      - key: flashback
+        label: Shown as a flashback
+        type: yesno
+        when: "project.flashbacks == 'yes'"
+        ask: "Is {name} shown to the reader as a flashback or flash-forward?"
+
+      - key: location
+        label: Where
+        type: entity
+        kind: location
+        relation: happens in
+        ask: "Where does {name} take place?"
+
+      - key: participants
+        label: Who is involved
+        type: entities
+        kind: character
+        relation: involves
+        ask: "Who is involved in {name}? Name each person, separated by commas."
+
+  - id: cause
+    title: Causes and Effects
+    questions:
+      - key: cause
+        label: Cause
+        ask: "What led up to {name}? What choices or circumstances caused it?"
+
+      - key: reactions
+        label: Reactions
+        ask: "How do the people involved react to {name}?"
+
+      - key: immediate
+        label: Immediate results
+        ask: "What are the immediate results of {name}?"
+
+      - key: long_term
+        label: Long-term effects
+        ask: "What long-term effects does {name} have on the people involved, or on the world?"
+
+      - key: pov
+        label: Point of view
+        type: entity
+        kind: character
+        relation: involves
+        when: "project.type == 'Fiction'"
+        ask: "Whose point of view will the reader experience {name} through?"
+
+      - key: significance
+        label: Significance
+        ask: "Why is {name} important to the overall story?"
+
+      - key: public_view
+        label: How it was seen at the time
+        when: "project.type != 'Fiction'"
+        ask: "How did people at the time see {name}? Was it public, private, celebrated, or hidden?"
+
+      - key: sources
+        label: Sources
+        type: entities
+        kind: source
+        relation: cites
+        when: "project.type != 'Fiction'"
+        ask: "What sources document {name}? Name them, and I'll add them to your sources list."

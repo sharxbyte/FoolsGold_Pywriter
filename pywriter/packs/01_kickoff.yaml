@@ -1,0 +1,155 @@
+# Project kickoff - asked once per project, for every project type.
+pack: kickoff
+kind: project
+project_types: [Fiction, Non-Fiction, Biography]
+title: Project Kickoff
+intro: "Let's talk about your project as a whole before we get into the details."
+outro: "Thank you. That gives us a solid picture of the project."
+
+sections:
+  - id: identity
+    title: The Project
+    questions:
+      - key: name
+        label: Working title
+        type: text
+        ask: "What is the working title of your project? It's fine if it's only a placeholder for now."
+        required: true
+
+      - key: premise
+        label: Premise
+        when: "project.type == 'Fiction'"
+        ask: "In one or two sentences, what is your story about? Who is it about, what do they want, and what stands in their way?"
+
+      - key: subject
+        label: Subject
+        type: text
+        when: "project.type == 'Biography'"
+        ask: "Who is the subject of this biography?"
+
+      - key: subject_significance
+        label: Why this person
+        when: "project.type == 'Biography'"
+        ask: "Why is {subject}'s story worth telling? What makes their life significant or compelling?"
+
+      - key: biography_scope
+        label: Scope of the biography
+        type: choice
+        when: "project.type == 'Biography'"
+        ask: "Will this cover {subject}'s whole life, or focus on a particular period or theme?"
+        options:
+          - {value: full, label: "The whole life", aliases: [whole, entire, full life]}
+          - {value: period, label: "A particular period", aliases: [period, years, era]}
+          - {value: theme, label: "A particular theme or aspect", aliases: [theme, aspect]}
+
+      - key: biography_period
+        label: Period covered
+        when: "project.type == 'Biography' and biography_scope in ['period', 'theme']"
+        ask: "Which period, years, or aspect of {subject}'s life will the book focus on?"
+
+      - key: relationship_to_subject
+        label: Author's relationship to subject
+        when: "project.type == 'Biography'"
+        ask: "What is your relationship to {subject}? Is this your own life story, someone you know personally, or someone you are researching?"
+
+      - key: topic
+        label: Main topic
+        when: "project.type == 'Non-Fiction'"
+        ask: "What is the main topic of your book?"
+
+      - key: central_question
+        label: Central question
+        when: "project.type == 'Non-Fiction'"
+        ask: "What central question does your book answer for the reader?"
+
+      - key: thesis
+        label: Thesis
+        when: "project.type == 'Non-Fiction'"
+        ask: "What is the main argument, claim, or promise of the book? Try to put it in a single sentence."
+
+      - key: genre
+        label: Genre
+        type: text
+        when: "project.type == 'Fiction'"
+        ask: "What genre is the story, and does it blend any sub-genres? For example: fantasy, mystery, literary fiction, cozy romance, or science-fiction thriller."
+
+      - key: nonfiction_category
+        label: Category
+        type: text
+        when: "project.type == 'Non-Fiction'"
+        ask: "What kind of non-fiction is this? For example: history, how-to, memoir, science, self-help, essays, or journalism."
+
+  - id: reader
+    title: Readers and Shape
+    questions:
+      - key: audience
+        label: Intended audience
+        ask: "Who do you imagine reading this? Describe your ideal reader, including their age group and what they enjoy."
+
+      - key: length
+        label: Intended length
+        type: choice
+        ask: "How long do you expect the finished work to be?"
+        options:
+          - {value: short, label: "Short story or essay", aliases: [short, essay]}
+          - {value: novella, label: "Novella or short book", aliases: [novella]}
+          - {value: novel, label: "Full-length book", aliases: [novel, full, book]}
+          - {value: series, label: "A series of books", aliases: [series, trilogy]}
+          - {value: unsure, label: "Not sure yet", aliases: [unsure, "not sure", "don't know"]}
+
+      - key: series_plan
+        label: Series plan
+        when: "length == 'series'"
+        ask: "Tell me about the series. How many books do you have in mind, and where does this one fit?"
+
+      - key: pov
+        label: Point of view
+        type: choice
+        ask: "From whose point of view will the work be told?"
+        options:
+          - {value: first, label: "First person (I / we)", aliases: [first, first person]}
+          - {value: third_limited, label: "Third person, close to one character at a time", aliases: [limited, close third]}
+          - {value: third_omniscient, label: "Third person, all-knowing narrator", aliases: [omniscient, all knowing]}
+          - {value: second, label: "Second person (you)", aliases: [second]}
+          - {value: mixed, label: "A mix, or multiple narrators", aliases: [mixed, multiple, several]}
+
+      - key: tense
+        label: Tense
+        type: choice
+        ask: "Will the narration be mostly in the past tense or the present tense?"
+        options:
+          - {value: past, label: "Past tense", aliases: [past]}
+          - {value: present, label: "Present tense", aliases: [present]}
+          - {value: mixed, label: "A mix", aliases: [mix, both]}
+
+      - key: tone
+        label: Tone and voice
+        ask: "What tone and voice do you want the writing to have? For example: dark and tense, warm and funny, formal, conversational, lyrical."
+
+      - key: comparables
+        label: Comparable titles
+        ask: "Are there any books, films, or shows that feel similar to what you're making, or that inspired its style?"
+
+  - id: purpose
+    title: Purpose and Boundaries
+    questions:
+      - key: inspiration
+        label: Inspiration
+        ask: "What inspired this project? What made you want to write it?"
+
+      - key: reader_takeaway
+        label: What readers should feel
+        ask: "When a reader finishes, what do you want them to feel, think, or understand?"
+
+      - key: boundaries
+        label: Content boundaries
+        ask: "Are there any content boundaries you want to respect, such as topics you won't include, or a level of violence, language, or intimacy you want to stay within?"
+
+      - key: success
+        label: What success looks like
+        ask: "What would success look like for you with this project? Finishing a draft, publishing, sharing with family, or something else?"
+
+      - key: deadline
+        label: Goals and deadlines
+        type: text
+        ask: "Do you have a deadline or a writing goal, such as a target word count or date?"

@@ -1,0 +1,109 @@
+pack: group
+kind: group
+project_types: [Fiction, Non-Fiction, Biography]
+title: Group / Organization Interview
+intro: "Let's describe a group: a family, crew, company, faction, religion, nation, or any organization."
+outro: "Thank you. {name} is saved."
+another: "Is there another group or organization you'd like to add?"
+
+sections:
+  - id: basics
+    title: The Basics
+    questions:
+      - key: name
+        label: Name
+        type: text
+        required: true
+        ask: "What is the group called?"
+
+      - key: group_type
+        label: Type of group
+        type: text
+        ask: "What kind of group is {name}? For example: a family, a gang, a company, a guild, a government, a church, or a resistance movement."
+
+      - key: purpose
+        label: Purpose
+        ask: "What does {name} exist to do? What does it want?"
+
+      - key: leader
+        label: Leader
+        type: entities
+        kind: character
+        relation: led by
+        ask: "Who leads {name}? Name the leader or leaders."
+
+      - key: members
+        label: Notable members
+        type: entities
+        kind: character
+        relation: has member
+        ask: "Who are the notable members of {name}? Name them, separated by commas."
+
+      - key: base
+        label: Headquarters
+        type: entity
+        kind: location
+        relation: based in
+        ask: "Where is {name} based?"
+
+  - id: inside
+    title: How It Works
+    questions:
+      - key: size
+        label: Size
+        type: text
+        ask: "How large is {name}, and how far does its influence reach?"
+
+      - key: structure
+        label: Structure and ranks
+        ask: "How is {name} organized? Are there ranks, roles, or an inner circle?"
+
+      - key: joining
+        label: Joining and leaving
+        ask: "How does someone join {name}, and what happens to people who leave or betray it?"
+
+      - key: beliefs
+        label: Beliefs and rules
+        ask: "What does {name} believe, and what rules must its members follow?"
+
+      - key: resources
+        label: Resources
+        ask: "What resources does {name} control, such as money, weapons, knowledge, land, or magic?"
+
+      - key: symbols
+        label: Symbols and identity
+        type: text
+        ask: "Does {name} have symbols, colors, uniforms, or rituals that mark its members?"
+
+  - id: world
+    title: Place in the World
+    questions:
+      - key: allies
+        label: Allied groups
+        type: entities
+        kind: group
+        relation: ally
+        ask: "Which other groups are allied with {name}?"
+
+      - key: enemies
+        label: Rival groups
+        type: entities
+        kind: group
+        relation: enemy
+        ask: "Which groups oppose {name}?"
+
+      - key: reputation
+        label: Reputation
+        ask: "How do ordinary people see {name}?"
+
+      - key: history
+        label: History
+        ask: "How did {name} begin, and what major events have shaped it?"
+
+      - key: secrets
+        label: Secrets
+        ask: "What does {name} hide from outsiders, or even from its own members?"
+
+      - key: story_role
+        label: Role in the story
+        ask: "What part does {name} play in the story?"

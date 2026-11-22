@@ -1,0 +1,335 @@
+# Real people, for biography and non-fiction. Uses the same field keys as the
+# fiction character pack where the meaning is the same, so lists, maps and Talk
+# mode treat them alike. Tense-neutral wording: the person may be living or not.
+pack: person
+kind: character
+project_types: [Biography, Non-Fiction]
+title: Person Interview
+intro: "Let's record what you know about a person in the book."
+outro: "Thank you. {name}'s profile is saved."
+another: "Is there another person you'd like to add?"
+
+sections:
+  - id: basics
+    title: The Basics
+    questions:
+      - key: name
+        label: Full name
+        type: text
+        required: true
+        ask: "What is this person's full name, including any titles?"
+
+      - key: aliases
+        label: Also known as
+        type: text
+        ask: "Did or does {name} go by any nicknames, maiden names, or other names? List them separated by commas."
+
+      - key: tier
+        label: Importance
+        type: choice
+        allow_other: false
+        ask: "How central is {name} to the book? Are they the subject or a main figure, someone who appears often, or someone mentioned only briefly?"
+        options:
+          - {value: primary, label: "Subject or main figure", aliases: [subject, main, central, primary, major]}
+          - {value: secondary, label: "Appears often", aliases: [often, secondary, supporting, important]}
+          - {value: tertiary, label: "Mentioned briefly", aliases: [briefly, minor, tertiary, mentioned]}
+
+      - key: relationship_to_subject
+        label: Relationship to the subject
+        type: text
+        when: "project.type == 'Biography' and name != project.subject"
+        ask: "How is {name} connected to {subject}?"
+
+      - key: pronouns
+        label: Pronouns
+        type: choice
+        ask: "Which pronouns should I use for {name}?"
+        options:
+          - {value: she/her, label: "She / her", aliases: [she, her, female, woman]}
+          - {value: he/him, label: "He / him", aliases: [he, him, male, man]}
+          - {value: they/them, label: "They / them", aliases: [they, them]}
+
+      - key: living
+        label: Living
+        type: yesno
+        ask: "Is {name} still living?"
+
+      - key: born
+        label: Born
+        type: text
+        ask: "When was {name} born?"
+
+      - key: birthplace
+        label: Birthplace
+        type: entity
+        kind: location
+        relation: born in
+        ask: "Where was {name} born?"
+
+      - key: died
+        label: Died
+        when: "living == 'no'"
+        ask: "When, where, and how did {name} die?"
+
+  - id: resume
+    title: Life's Work
+    questions:
+      - key: occupation
+        label: Occupation
+        type: text
+        ask: "What was or is {name}'s main occupation or calling?"
+
+      - key: qualifications
+        label: Education and training
+        tiers: [primary, secondary]
+        ask: "What education and training did {name} have, and who were {their} important teachers or mentors?"
+
+      - key: career
+        label: Career
+        tiers: [primary, secondary]
+        ask: "Walk me through {name}'s career or working life. What positions did {name} hold, and what were the first notable accomplishments?"
+
+      - key: achievements
+        label: Achievements
+        tiers: [primary]
+        ask: "What achievements or contributions is {name} best known for?"
+
+      - key: languages
+        label: Languages
+        type: text
+        tiers: [primary]
+        ask: "What languages did or does {name} speak, and how fluently?"
+
+  - id: appearance
+    title: Appearance and Manner
+    tiers: [primary, secondary]
+    questions:
+      - key: first_impression
+        label: First impression
+        ask: "What did people notice first on meeting {name}?"
+
+      - key: build
+        label: Height and build
+        type: text
+        ask: "How tall was or is {name}, and how would you describe {their} build?"
+
+      - key: hair
+        label: Hair, eyes and complexion
+        ask: "Describe {name}'s hair, eyes, and complexion, and how these changed with age."
+
+      - key: features
+        label: Distinguishing features
+        ask: "Did {name} have any distinguishing features, assistive devices, or a signature look?"
+
+      - key: clothing
+        label: Clothing and style
+        ask: "How did {name} usually dress?"
+
+      - key: voice
+        label: Voice and speech
+        tiers: [primary]
+        ask: "What was {name}'s voice like, and how did {name} speak? Any accent, favorite sayings, or verbal habits?"
+
+      - key: demeanor
+        label: Demeanor
+        ask: "How did {name} come across to other people?"
+
+  - id: personality
+    title: Personality and Beliefs
+    questions:
+      - key: personality
+        label: Personality
+        ask: "Describe {name}'s personality. What were or are {their} most distinctive traits?"
+
+      - key: strengths
+        label: Strengths
+        tiers: [primary, secondary]
+        ask: "What were {name}'s greatest strengths?"
+
+      - key: flaws
+        label: Flaws
+        tiers: [primary, secondary]
+        ask: "What were {name}'s flaws or blind spots?"
+
+      - key: values
+        label: Values and moral code
+        tiers: [primary, secondary]
+        ask: "What values guided {name}? Is there a motto or philosophy that sums {them} up?"
+
+      - key: beliefs
+        label: Faith and politics
+        tiers: [primary]
+        ask: "What were {name}'s religious, political, or economic views, and how strongly were they held?"
+
+      - key: loves
+        label: Passions
+        tiers: [primary]
+        ask: "What were {name}'s passions and interests outside of work? What couldn't {name} live without?"
+
+      - key: hates
+        label: Dislikes
+        tiers: [primary]
+        ask: "What did {name} dislike or refuse to tolerate?"
+
+      - key: fear
+        label: Fears
+        tiers: [primary]
+        ask: "What was {name} afraid of?"
+
+      - key: activism
+        label: Civic life and activism
+        tiers: [primary]
+        ask: "Was {name} involved in activism, protest, advocacy, or civic life? Describe it."
+
+  - id: background
+    title: Early Life
+    tiers: [primary, secondary]
+    questions:
+      - key: upbringing
+        label: Childhood
+        ask: "What was {name}'s childhood like? Describe the home, the neighborhood, and the family's financial situation."
+
+      - key: parents
+        label: Parents or guardians
+        type: entities
+        kind: character
+        relation: parent
+        ask: "Who raised {name}? Name the parents or guardians, separated by commas."
+
+      - key: parent_relationship
+        label: Relationship with parents
+        when: "answered('parents')"
+        ask: "What was {name}'s relationship with each of them like?"
+
+      - key: siblings
+        label: Siblings
+        type: entities
+        kind: character
+        relation: sibling
+        ask: "Did {name} have brothers or sisters? Name them."
+
+      - key: household
+        label: Household
+        tiers: [primary]
+        ask: "What was discipline like at home? Were there separations, addictions, violence, or other hardships?"
+
+      - key: formative_events
+        label: Formative experiences
+        ask: "What experiences in childhood and the teenage years shaped {name}?"
+
+      - key: childhood_stories
+        label: Childhood stories
+        tiers: [primary]
+        ask: "Are there any memorable stories from {name}'s childhood?"
+
+      - key: heroes
+        label: Heroes and role models
+        type: entities
+        kind: character
+        relation: mentor
+        tiers: [primary]
+        ask: "Who were {name}'s heroes and role models? Name them."
+
+  - id: adult
+    title: Adult Life
+    questions:
+      - key: home
+        label: Homes
+        type: entities
+        kind: location
+        relation: lives in
+        ask: "Where has {name} lived? Name the main places."
+
+      - key: partners
+        label: Partners and spouses
+        type: entities
+        kind: character
+        relation: spouse
+        tiers: [primary, secondary]
+        ask: "Who were {name}'s partners or spouses? Name them."
+
+      - key: children
+        label: Children
+        type: entities
+        kind: character
+        relation: child
+        tiers: [primary, secondary]
+        ask: "Did {name} have children? Name them."
+
+      - key: friends
+        label: Friends and allies
+        type: entities
+        kind: character
+        relation: friend
+        tiers: [primary, secondary]
+        ask: "Who were {name}'s closest friends and allies?"
+
+      - key: rivals
+        label: Rivals and adversaries
+        type: entities
+        kind: character
+        relation: rival
+        tiers: [primary, secondary]
+        ask: "Did {name} have rivals or adversaries? Name them."
+
+      - key: groups
+        label: Organizations
+        type: entities
+        kind: group
+        relation: member of
+        tiers: [primary, secondary]
+        ask: "Which organizations, communities, or institutions was {name} part of?"
+
+      - key: relationship_notes
+        label: Relationships over time
+        tiers: [primary]
+        ask: "How did {name}'s relationships change over time? Were there betrayals, reconciliations, or turning points?"
+
+      - key: challenges
+        label: Challenges
+        tiers: [primary, secondary]
+        ask: "What were the biggest personal or professional challenges {name} faced, and how did {name} cope with them?"
+
+      - key: trouble
+        label: Times in trouble
+        tiers: [primary]
+        ask: "Was there a time {name} got into trouble? What happened, and what did {name} learn?"
+
+      - key: later_years
+        label: Later years
+        tiers: [primary]
+        ask: "What were or are {name}'s later years like, and how did {their} views evolve?"
+
+  - id: legacy
+    title: Legacy
+    tiers: [primary, secondary]
+    questions:
+      - key: role_in_book
+        label: Role in the book
+        ask: "What role does {name} play in the book?"
+
+      - key: triumph
+        label: Proudest moments
+        tiers: [primary]
+        ask: "What would {name} consider {their} greatest triumph, and {their} greatest regret?"
+
+      - key: legacy
+        label: Legacy
+        tiers: [primary]
+        ask: "How is {name} remembered, or how would {name} like to be remembered? What lessons does {their} life offer?"
+
+      - key: misconceptions
+        label: Misconceptions
+        tiers: [primary]
+        ask: "Are there misunderstandings or myths about {name} that the book should address?"
+
+      - key: sources
+        label: Sources
+        type: entities
+        kind: source
+        relation: cites
+        ask: "What sources are you using for {name}, such as interviews, letters, records, or books? Name them."
+
+      - key: extra
+        label: Anything else
+        ask: "Is there anything else about {name} you'd like to record?"

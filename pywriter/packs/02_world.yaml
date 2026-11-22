@@ -1,0 +1,124 @@
+# World and scope qualifier (fiction). Answers here unlock or hide questions in
+# the location, event and character interviews (project.scale, project.speculative, ...).
+pack: world
+kind: project
+project_types: [Fiction]
+title: World and Scope
+intro: "Now let's work out the size and shape of your story's world. Your answers decide which questions I ask later, so we only cover what matters."
+outro: "Great. I'll use this to tailor the setting and timeline interviews."
+
+sections:
+  - id: scale
+    title: How Big Is the World?
+    questions:
+      - key: world_type
+        label: Type of world
+        type: choice
+        ask: "Is the story set in the real world as we know it, an alternate version of the real world, or a world you have invented?"
+        options:
+          - {value: real, label: "The real world", aliases: [real, our world, earth]}
+          - {value: alternate, label: "An alternate version of the real world", aliases: [alternate, alternative, alt]}
+          - {value: invented, label: "An invented world", aliases: [invented, made up, created, fantasy, own world]}
+
+      - key: scale
+        label: Largest scale
+        type: choice
+        ask: "What is the largest area the story covers? Does everything happen in a single building, one town or city, a wider region, a whole country, an entire planet, across multiple worlds, or across different dimensions or realities?"
+        options:
+          - {value: building, label: "A single building or vessel", aliases: [building, house, ship, single building]}
+          - {value: settlement, label: "One village, town or city", aliases: [town, city, village, single town]}
+          - {value: region, label: "A region", aliases: [region, area, province, county]}
+          - {value: country, label: "A whole country or kingdom", aliases: [country, nation, kingdom]}
+          - {value: planet, label: "An entire planet", aliases: [planet, world, whole world, globe]}
+          - {value: galaxy, label: "Multiple worlds or space", aliases: [worlds, space, galaxy, planets, star]}
+          - {value: multiverse, label: "Multiple dimensions or realities", aliases: [dimensions, realities, multiverse]}
+
+      - key: era
+        label: Era
+        type: text
+        ask: "When does the story take place? Give a year, an era, or describe the time period."
+
+      - key: based_on_real
+        label: Based on real places
+        type: yesno
+        when: "world_type in ['real', 'alternate']"
+        ask: "Are any of the places in the story real locations that you'll need to research?"
+
+  - id: time
+    title: How Does Time Work?
+    questions:
+      - key: linear_timeline
+        label: Single linear timeline
+        type: yesno
+        ask: "Does the story move forward in a single, straight line from beginning to end, without flashbacks, time travel, or alternate timelines?"
+
+      - key: flashbacks
+        label: Flashbacks
+        type: yesno
+        when: "linear_timeline == 'no'"
+        ask: "Does the story use flashbacks or flash-forwards?"
+
+      - key: time_travel
+        label: Time travel
+        type: yesno
+        when: "linear_timeline == 'no'"
+        ask: "Does anyone travel through time?"
+
+      - key: alt_timelines
+        label: Multiple timelines
+        type: yesno
+        when: "linear_timeline == 'no'"
+        ask: "Are there alternate or parallel timelines that the story moves between?"
+
+      - key: time_rules
+        label: Rules of time
+        when: "time_travel == 'yes' or alt_timelines == 'yes'"
+        ask: "How does time travel or moving between timelines work? What are the rules, costs, and paradoxes you want to respect?"
+
+      - key: story_span
+        label: Time span of the story
+        type: text
+        ask: "How much time passes from the first page to the last? Hours, days, years, generations?"
+
+  - id: extraordinary
+    title: The Extraordinary
+    questions:
+      - key: speculative
+        label: Magic or advanced technology
+        type: yesno
+        ask: "Does the story include magic, supernatural forces, or technology beyond what exists today?"
+
+      - key: magic_system
+        label: How the extraordinary works
+        when: "speculative == 'yes'"
+        ask: "Describe how magic, the supernatural, or the advanced technology works. Where does it come from, who can use it, and what are its limits and costs?"
+
+      - key: tech_level
+        label: Technology level
+        type: text
+        ask: "What is the general level of technology? For example: stone age, medieval, industrial, modern day, near future, or far future."
+
+      - key: multiple_species
+        label: Non-human species
+        type: yesno
+        ask: "Are any of the characters non-human, such as aliens, elves, robots, animals, or other kinds of beings?"
+
+      - key: species_overview
+        label: Species and peoples
+        when: "multiple_species == 'yes'"
+        ask: "List the main species or kinds of beings, and give a sentence about each."
+
+  - id: summary
+    title: The World in Brief
+    questions:
+      - key: world_summary
+        label: World summary
+        ask: "In a few sentences, how would you describe this world to a reader who has never seen it?"
+
+      - key: world_rules
+        label: Unbreakable rules
+        ask: "Are there any rules of this world, whether social, physical, or magical, that the story must never break?"
+
+      - key: world_conflicts
+        label: Big conflicts
+        ask: "What large conflicts or tensions are going on in the world as the story begins, such as wars, injustices, disasters, or power struggles?"

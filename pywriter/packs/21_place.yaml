@@ -1,0 +1,72 @@
+pack: place
+kind: location
+project_types: [Biography, Non-Fiction]
+title: Place Interview
+intro: "Let's describe a real place that matters to the book."
+outro: "Thank you. {name} is saved."
+another: "Is there another place you'd like to add?"
+
+sections:
+  - id: basics
+    title: The Place
+    questions:
+      - key: name
+        label: Name
+        type: text
+        required: true
+        ask: "What is the place called?"
+
+      - key: level
+        label: Level
+        type: choice
+        options: levels
+        allow_other: false
+        ask: "What kind of place is {name}: a room, a building, a site, a neighborhood, a town or city, a region, or a country?"
+
+      - key: place_type
+        label: Type of place
+        type: text
+        ask: "What kind of {level} is it? For example: a family farmhouse, a school, a mining town."
+
+      - key: parent
+        label: Located in
+        type: entity
+        kind: location
+        relation: located in
+        ask: "What larger place is {name} in? For example, the town a house is in."
+
+      - key: period
+        label: Period
+        type: text
+        ask: "During what years does {name} matter to the book?"
+
+      - key: significance
+        label: Significance
+        ask: "Why is {name} important to the book? What happened there?"
+
+  - id: detail
+    title: Then and Now
+    questions:
+      - key: look
+        label: Appearance at the time
+        ask: "What did {name} look, sound, and smell like during that period?"
+
+      - key: conditions
+        label: Conditions
+        ask: "What were living conditions like there: the climate, resources, economy, and politics?"
+
+      - key: community
+        label: Community
+        ask: "What community or social world surrounded {name}?"
+
+      - key: influence
+        label: Influence on people
+        ask: "How did {name} influence the people in the book, and how did they shape it?"
+
+      - key: change
+        label: How it changed
+        ask: "How has {name} changed since then, and is it remembered or preserved today?"
+
+      - key: research
+        label: Research
+        ask: "How are you researching {name}? Personal visits, photographs, maps, or first- or second-hand accounts?"

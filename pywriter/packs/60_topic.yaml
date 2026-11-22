@@ -1,0 +1,73 @@
+pack: topic
+kind: topic
+project_types: [Non-Fiction]
+title: Topic Interview
+intro: "Let's work through one topic or chapter subject of your book."
+outro: "Thank you. {name} is saved."
+another: "Is there another topic you'd like to work through?"
+
+sections:
+  - id: topic
+    title: The Topic
+    questions:
+      - key: name
+        label: Topic
+        type: text
+        required: true
+        ask: "What is this topic called?"
+
+      - key: question
+        label: Question it answers
+        ask: "What question does this part of the book answer for the reader?"
+
+      - key: claim
+        label: Main point
+        ask: "What is the main point or claim you're making about {name}?"
+
+      - key: importance
+        label: Why it matters
+        ask: "Why does {name} matter to the reader?"
+
+      - key: prerequisites
+        label: What the reader needs first
+        ask: "What does the reader need to understand before {name} makes sense?"
+
+      - key: misconceptions
+        label: Misconceptions
+        ask: "What do people commonly get wrong about {name}?"
+
+  - id: support
+    title: Evidence
+    questions:
+      - key: evidence
+        label: Evidence
+        ask: "What evidence, examples, or stories support your point?"
+
+      - key: opposing
+        label: Opposing views
+        ask: "What opposing views exist, and how will you address them?"
+
+      - key: people
+        label: People involved
+        type: entities
+        kind: character
+        relation: related to
+        ask: "Which people are important to {name}? Name them."
+
+      - key: sources
+        label: Sources
+        type: entities
+        kind: source
+        relation: cites
+        ask: "Which sources will you cite for {name}? Name them, separated by commas."
+
+      - key: related_topics
+        label: Related topics
+        type: entities
+        kind: topic
+        relation: related to
+        ask: "Which other topics in the book does {name} connect to?"
+
+      - key: conclusion
+        label: Conclusion
+        ask: "What should the reader conclude or be able to do after reading about {name}?"

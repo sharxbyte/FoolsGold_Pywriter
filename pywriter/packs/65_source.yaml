@@ -1,0 +1,57 @@
+pack: source
+kind: source
+project_types: [Non-Fiction, Biography, Fiction]
+title: Source Interview
+intro: "Let's record a source or reference."
+outro: "Thank you. {name} has been added to your sources."
+another: "Is there another source you'd like to add?"
+
+sections:
+  - id: source
+    title: The Source
+    questions:
+      - key: name
+        label: Title
+        type: text
+        required: true
+        ask: "What is the title of the source, or a short description of it?"
+
+      - key: source_type
+        label: Type
+        type: choice
+        ask: "What kind of source is it?"
+        options:
+          - {value: book, label: "Book", aliases: [book]}
+          - {value: article, label: "Article or paper", aliases: [article, paper, journal]}
+          - {value: interview, label: "Interview", aliases: [interview, conversation]}
+          - {value: archive, label: "Archive, letter or record", aliases: [archive, letter, record, document, diary]}
+          - {value: web, label: "Website or video", aliases: [website, web, online, video]}
+          - {value: other, label: "Other", aliases: [other]}
+
+      - key: author
+        label: Author or creator
+        type: text
+        ask: "Who wrote or created {name}?"
+
+      - key: published
+        label: Publication details
+        type: text
+        ask: "When and where was {name} published or recorded? Include a link or location if you have one."
+
+      - key: primary
+        label: Primary source
+        type: yesno
+        ask: "Is {name} a primary source, meaning first-hand evidence from the time or the people involved?"
+
+      - key: key_points
+        label: Key points
+        ask: "What are the key facts or ideas you're taking from {name}?"
+
+      - key: reliability
+        label: Reliability
+        ask: "How reliable is {name}? Does it conflict with any other sources?"
+
+      - key: citation
+        label: Citation
+        type: text
+        ask: "If you'd like, give the full citation in the style you're using."

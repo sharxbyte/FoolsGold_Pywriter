@@ -1,0 +1,498 @@
+# Fiction character interview.
+# Order follows how you'd get to know a job candidate: the resume first (name, role,
+# qualifications, experience), then meeting them (appearance, manner), then who they
+# are inside, their history, their relationships, and finally their part in the story.
+# Depth depends on tier: main characters get everything, secondary characters a
+# medium set, and minor characters a short sketch.
+pack: character
+kind: character
+project_types: [Fiction]
+title: Character Interview
+intro: "Let's meet a character. Answer as much or as little as you like; you can always come back and re-interview later."
+outro: "Thank you. {name}'s character sheet is saved."
+another: "Is there another character you'd like to add?"
+
+sections:
+  - id: basics
+    title: The Basics
+    questions:
+      - key: name
+        label: Full name
+        type: text
+        required: true
+        ask: "What is this character's full name, including any title they use?"
+
+      - key: aliases
+        label: Also known as
+        type: text
+        ask: "Does {name} go by any nicknames, aliases, or other names? If so, list them separated by commas."
+
+      - key: tier
+        label: Importance
+        type: choice
+        allow_other: false
+        ask: "How important is {name} to the story? Are they a main character whose journey we follow closely, a secondary character who matters to the plot, or a minor character who only appears briefly?"
+        options:
+          - {value: primary, label: "Main character", aliases: [main, major, protagonist, lead, primary, central]}
+          - {value: secondary, label: "Secondary character", aliases: [secondary, supporting, side]}
+          - {value: tertiary, label: "Minor character", aliases: [minor, tertiary, background, small, briefly, cameo]}
+
+      - key: story_role
+        label: Role in the story
+        type: text
+        ask: "What role does {name} play in the story? For example: protagonist, antagonist, mentor, love interest, sidekick, rival, foil, comic relief, or something else."
+
+      - key: pronouns
+        label: Pronouns
+        type: choice
+        ask: "Which pronouns does {name} use?"
+        options:
+          - {value: she/her, label: "She / her", aliases: [she, her, female, woman, girl]}
+          - {value: he/him, label: "He / him", aliases: [he, him, male, man, boy]}
+          - {value: they/them, label: "They / them", aliases: [they, them, nonbinary, non-binary]}
+          - {value: it/its, label: "It / its", aliases: [it, its]}
+
+      - key: species
+        label: Species
+        type: text
+        when: "project.multiple_species == 'yes'"
+        ask: "What species, race, or kind of being is {name}?"
+
+      - key: age
+        label: Age
+        type: text
+        ask: "How old is {name} when the story begins?"
+
+  - id: resume
+    title: The Resume
+    intro: "Let's look at {name} the way you'd read a resume."
+    questions:
+      - key: occupation
+        label: Occupation
+        type: text
+        ask: "What does {name} do for a living, or how do they spend most of their days?"
+
+      - key: qualifications
+        label: Qualifications and education
+        tiers: [primary, secondary]
+        ask: "What education, training, or qualifications does {name} have? Think of what would appear on {their} resume, and anything that wouldn't."
+
+      - key: skills
+        label: Skills and talents
+        tiers: [primary, secondary]
+        ask: "What is {name} genuinely good at? List {their} strongest skills and talents."
+
+      - key: experience
+        label: Experience
+        tiers: [primary, secondary]
+        ask: "What past jobs, positions, or experiences has {name} had that matter to the story?"
+
+      - key: shortcomings
+        label: Things they're bad at
+        tiers: [primary]
+        ask: "What is {name} noticeably bad at, or unable to do, even if they'd never admit it?"
+
+      - key: languages
+        label: Languages
+        type: text
+        tiers: [primary]
+        ask: "What languages does {name} speak or read, and how fluently?"
+
+      - key: abilities
+        label: Special abilities
+        when: "project.speculative == 'yes' and tier != 'tertiary'"
+        ask: "Does {name} have any magical, supernatural, technological, or otherwise extraordinary abilities? If so, what are they, and what are their limits or costs?"
+
+  - id: appearance
+    title: First Impressions
+    intro: "Now imagine {name} walking into the room."
+    questions:
+      - key: first_impression
+        label: First impression
+        ask: "Picture meeting {name} for the first time. What is the very first thing you notice about {them}?"
+
+      - key: height
+        label: Height
+        type: text
+        ask: "How tall is {name}?"
+
+      - key: build
+        label: Build and weight
+        type: text
+        ask: "How would you describe {name}'s build and body type, and roughly how heavy are they?"
+
+      - key: skin
+        label: Skin and complexion
+        type: text
+        tiers: [primary, secondary]
+        ask: "What is {name}'s skin tone and complexion like?"
+
+      - key: hair
+        label: Hair
+        type: text
+        ask: "Describe {name}'s hair: its color, length, texture, and how {name} usually wears it."
+
+      - key: eyes
+        label: Eyes
+        type: text
+        tiers: [primary, secondary]
+        ask: "What color are {name}'s eyes, and is there anything striking about {their} gaze?"
+
+      - key: features
+        label: Distinguishing features
+        ask: "Does {name} have any distinguishing features, such as scars, tattoos, birthmarks, piercings, augmentations, or anything else that stands out?"
+
+      - key: clothing
+        label: Clothing and style
+        ask: "How does {name} usually dress? Describe {their} typical clothing, overall style, jewelry, and accessories."
+
+      - key: presentation
+        label: Gender presentation
+        tiers: [primary, secondary]
+        ask: "How does {name} present {their} gender to the world, if that matters to the story?"
+
+      - key: voice
+        label: Voice
+        tiers: [primary, secondary]
+        ask: "What does {name}'s voice sound like? Think about pitch, accent, speed, and any verbal habits or favorite phrases."
+
+      - key: body_language
+        label: Posture and movement
+        tiers: [primary, secondary]
+        ask: "How does {name} carry {themself}? Describe {their} posture, gestures, and the way {name} moves."
+
+      - key: health
+        label: Health and disability
+        tiers: [primary]
+        ask: "Does {name} have any disabilities, chronic conditions, neurodivergence, or assistive devices that shape {their} daily life?"
+
+  - id: personality
+    title: Personality
+    questions:
+      - key: demeanor
+        label: Demeanor
+        ask: "How does {name} come across to strangers? Warm, guarded, loud, quiet, charming, abrasive, or something else?"
+
+      - key: personality
+        label: Defining traits
+        ask: "Describe {name}'s personality in a few words. What are {their} most defining traits?"
+
+      - key: strengths
+        label: Strengths of character
+        tiers: [primary, secondary]
+        ask: "What are {name}'s greatest strengths of character, such as courage, loyalty, patience, or wit?"
+
+      - key: flaws
+        label: Flaws
+        tiers: [primary, secondary]
+        ask: "What are {name}'s biggest flaws of character, such as pride, impatience, cowardice, or jealousy?"
+
+      - key: communication
+        label: Communication style
+        tiers: [primary, secondary]
+        ask: "How does {name} talk to people? Is {name} blunt, diplomatic, sarcastic, formal, shy, or chatty?"
+
+      - key: humor
+        label: Sense of humor
+        tiers: [primary]
+        ask: "What makes {name} laugh, and what is {their} sense of humor like?"
+
+      - key: stress
+        label: Under pressure
+        tiers: [primary, secondary]
+        ask: "How does {name} react under pressure or in a crisis?"
+
+      - key: anger
+        label: Anger
+        tiers: [primary]
+        ask: "What makes {name} angry, and what does {their} anger look like?"
+
+      - key: coping
+        label: Coping
+        tiers: [primary]
+        ask: "How does {name} cope with pain, grief, or disappointment?"
+
+      - key: habits
+        label: Habits and quirks
+        tiers: [primary, secondary]
+        ask: "What habits, quirks, or little rituals does {name} have?"
+
+      - key: loves
+        label: Loves
+        tiers: [primary, secondary]
+        ask: "What does {name} love? Think about foods, music, hobbies, places, or things {name} couldn't live without."
+
+      - key: hates
+        label: Hates
+        tiers: [primary, secondary]
+        ask: "What does {name} hate or refuse to put up with?"
+
+      - key: hobbies
+        label: Hobbies and interests
+        tiers: [primary]
+        ask: "What does {name} do for fun, and what subjects fascinate {them}?"
+
+  - id: inner
+    title: Inner Life
+    tiers: [primary, secondary]
+    questions:
+      - key: want
+        label: What they want
+        ask: "What does {name} want more than anything when the story begins?"
+
+      - key: need
+        label: What they need
+        tiers: [primary]
+        ask: "What does {name} truly need, even if {name} doesn't realize it yet?"
+
+      - key: fear
+        label: Greatest fear
+        ask: "What is {name} most afraid of?"
+
+      - key: secret
+        label: Secret
+        ask: "What secret is {name} keeping, and who is {name} keeping it from?"
+
+      - key: inner_conflict
+        label: Internal conflict
+        tiers: [primary]
+        ask: "What internal conflict does {name} struggle with, where part of {them} wants one thing and part wants another?"
+
+      - key: values
+        label: Values and moral code
+        ask: "What values guide {name}'s decisions? Is there a line {name} would never cross?"
+
+      - key: beliefs
+        label: Beliefs
+        tiers: [primary]
+        ask: "What does {name} believe about religion, spirituality, fate, or how the world works?"
+
+      - key: politics
+        label: Social and political views
+        tiers: [primary]
+        ask: "Does {name} hold strong political, social, or economic views? How do they show?"
+
+      - key: self_image
+        label: Self-image
+        tiers: [primary]
+        ask: "How does {name} see {themself}, and how is that different from how others see {them}?"
+
+      - key: motto
+        label: Personal motto
+        type: text
+        tiers: [primary]
+        ask: "If you had to sum up {name}'s personal philosophy in one sentence or motto, what would it be?"
+
+  - id: background
+    title: Background
+    questions:
+      - key: backstory_brief
+        label: Backstory
+        when: "tier == 'tertiary'"
+        ask: "Briefly, what is {name}'s story before the reader meets {them}?"
+
+      - key: birthplace
+        label: Birthplace
+        type: entity
+        kind: location
+        relation: born in
+        tiers: [primary, secondary]
+        ask: "Where was {name} born or created? Give the name of the place."
+
+      - key: upbringing
+        label: Upbringing
+        tiers: [primary, secondary]
+        ask: "Describe {name}'s childhood. What was home like, and what was the family's financial situation?"
+
+      - key: parents
+        label: Parents or guardians
+        type: entities
+        kind: character
+        relation: parent
+        tiers: [primary, secondary]
+        ask: "Who raised {name}? Name {their} parents or guardians, separated by commas. I'll add each of them as a character you can fill in later."
+
+      - key: parent_relationship
+        label: Relationship with parents
+        when: "answered('parents')"
+        ask: "What was {name}'s relationship like with each of those people, and are they still in {their} life?"
+
+      - key: siblings
+        label: Siblings
+        type: entities
+        kind: character
+        relation: sibling
+        tiers: [primary, secondary]
+        ask: "Does {name} have any brothers or sisters? If so, name them."
+
+      - key: relatives
+        label: Other important family
+        type: entities
+        kind: character
+        relation: relative
+        tiers: [primary]
+        ask: "Are there any other family members who were important in {name}'s life? Name them."
+
+      - key: household
+        label: Household and discipline
+        tiers: [primary]
+        ask: "What was discipline like in {name}'s home? Were there separations, divorces, addictions, or violence that {name} lived through?"
+
+      - key: formative_events
+        label: Formative experiences
+        tiers: [primary, secondary]
+        ask: "What experiences in childhood or adolescence shaped who {name} became?"
+
+      - key: trauma
+        label: Trauma and loss
+        tiers: [primary]
+        ask: "Has {name} experienced trauma or loss that still affects {them}? Keep this as brief as you like."
+
+      - key: mentors
+        label: Mentors and heroes
+        type: entities
+        kind: character
+        relation: mentor
+        tiers: [primary]
+        ask: "Who taught, mentored, or inspired {name}? Name them, separated by commas."
+
+      - key: triumph
+        label: Greatest triumph
+        tiers: [primary]
+        ask: "What does {name} consider {their} greatest triumph?"
+
+      - key: failure
+        label: Greatest failure or regret
+        tiers: [primary]
+        ask: "What does {name} consider {their} greatest failure or regret?"
+
+      - key: trouble
+        label: Times in trouble
+        tiers: [primary]
+        ask: "Tell me about a time {name} got into serious trouble. What happened, and what did {name} learn?"
+
+      - key: past_influence
+        label: How the past shows
+        tiers: [primary, secondary]
+        ask: "How does {name}'s past show up in the way {name} acts today?"
+
+  - id: relationships
+    title: Relationships
+    questions:
+      - key: home
+        label: Home
+        type: entity
+        kind: location
+        relation: lives in
+        ask: "Where does {name} live when the story begins?"
+
+      - key: groups
+        label: Groups and affiliations
+        type: entities
+        kind: group
+        relation: member of
+        tiers: [primary, secondary]
+        ask: "Does {name} belong to any groups, organizations, crews, families, or factions? Name them."
+
+      - key: allies
+        label: Friends and allies
+        type: entities
+        kind: character
+        relation: ally
+        ask: "Who does {name} trust most? Name {their} closest friends or allies."
+
+      - key: loves_romantic
+        label: Romantic interests
+        type: entities
+        kind: character
+        relation: love interest
+        tiers: [primary, secondary]
+        ask: "Is there anyone {name} loves romantically, or used to? Name them, or say none."
+
+      - key: enemies
+        label: Enemies and rivals
+        type: entities
+        kind: character
+        relation: enemy
+        ask: "Who opposes {name}, or whom does {name} see as an enemy or rival?"
+
+      - key: connections
+        label: Story connections
+        type: entities
+        kind: character
+        relation: related to
+        when: "tier == 'tertiary'"
+        ask: "Which characters does {name} interact with most in the story?"
+
+      - key: relationship_notes
+        label: Relationship details
+        tiers: [primary, secondary]
+        ask: "Tell me more about those relationships. How did they start, and how do they change during the story?"
+
+      - key: authority
+        label: Attitude to authority
+        tiers: [primary]
+        ask: "How does {name} react to authority figures, rules, and people in power?"
+
+      - key: perceived
+        label: How others see them
+        tiers: [primary, secondary]
+        ask: "How do other people generally react to {name}? Who likes {them}, and who doesn't?"
+
+      - key: pets
+        label: Pets and companions
+        type: text
+        tiers: [primary]
+        ask: "Does {name} have any pets or animal companions?"
+
+  - id: story
+    title: Part in the Story
+    questions:
+      - key: first_appearance
+        label: First appearance
+        ask: "When and where does {name} first appear in the story?"
+
+      - key: pov_character
+        label: Point-of-view character
+        type: yesno
+        tiers: [primary, secondary]
+        ask: "Is {name} a narrator or a point-of-view character?"
+
+      - key: story_goal
+        label: Goal in the story
+        tiers: [primary, secondary]
+        ask: "What is {name} trying to achieve during the story?"
+
+      - key: stakes
+        label: Stakes
+        tiers: [primary]
+        ask: "What does {name} stand to lose if {name} fails?"
+
+      - key: obstacles
+        label: Obstacles
+        tiers: [primary]
+        ask: "What stands in {name}'s way, both outside and inside {them}?"
+
+      - key: arc_start
+        label: Who they are at the start
+        tiers: [primary]
+        ask: "Describe who {name} is at the beginning of the story."
+
+      - key: arc_catalyst
+        label: What forces change
+        tiers: [primary]
+        ask: "What events or people force {name} to change?"
+
+      - key: arc_end
+        label: Who they become
+        tiers: [primary, secondary]
+        ask: "Who has {name} become by the end of the story? What has {name} gained, and what has {name} lost?"
+
+      - key: reactions
+        label: Situational reactions
+        tiers: [primary]
+        ask: "To round out the picture, how would {name} react if a stranger begged for help, if a close friend betrayed {them}, and if {name} suddenly came into a fortune?"
+
+      - key: extra
+        label: Anything else
+        ask: "Is there anything else about {name} you'd like to record?"

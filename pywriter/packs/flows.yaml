@@ -1,0 +1,31 @@
+# Guided Story Interview: the order in which whole interviews are offered.
+# loop: true  -> after each one, ask the pack's "another" question.
+# ask         -> asked before starting; answering no skips that step.
+Fiction:
+  - {pack: kickoff}
+  - {pack: world}
+  - {pack: character, loop: true, ask: "Let's meet your characters. Shall we start with your main character?"}
+  - {pack: location, loop: true, ask: "Now let's build the setting. Would you like to describe the largest place in the story first?"}
+  - {pack: group, loop: true, ask: "Are there any groups, families, or organizations you'd like to describe?"}
+  - {pack: plot, loop: true, ask: "Shall we map out the main plot?"}
+  - {pack: event, loop: true, ask: "Would you like to add key events to the timeline?"}
+  - {pack: item, loop: true, ask: "Are there any important objects or artifacts to record?"}
+  - {pack: theme, loop: true, ask: "Would you like to explore the story's themes?"}
+
+Biography:
+  - {pack: kickoff}
+  - {pack: person, loop: true, ask: "Let's start with the subject. Shall we begin their profile?"}
+  - {pack: event, loop: true, ask: "Would you like to add major life events to the timeline?"}
+  - {pack: place, loop: true, ask: "Would you like to describe the places that mattered in their life?"}
+  - {pack: group, loop: true, ask: "Were there organizations or communities that shaped their life?"}
+  - {pack: source, loop: true, ask: "Would you like to record your sources?"}
+  - {pack: theme, loop: true, ask: "Would you like to explore the themes of this life story?"}
+
+Non-Fiction:
+  - {pack: kickoff}
+  - {pack: topic, loop: true, ask: "Let's work through the main topics of the book. Shall we start?"}
+  - {pack: source, loop: true, ask: "Would you like to record your sources?"}
+  - {pack: person, loop: true, ask: "Are there people who feature in the book that you'd like to profile?"}
+  - {pack: event, loop: true, ask: "Are there events you'd like to place on a timeline?"}
+  - {pack: place, loop: true, ask: "Are there places you'd like to describe?"}
+  - {pack: theme, loop: true, ask: "Would you like to explore the book's themes?"}

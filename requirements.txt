@@ -1,0 +1,13 @@
+# Core
+PySide6>=6.6
+PyYAML>=6.0
+
+# Speech recognition (offline)
+vosk>=0.3.45
+sounddevice>=0.4.6
+
+# Optional but recommended
+jellyfish>=1.0        # better "sounds-like" name matching (falls back to Soundex)
+networkx>=3.0         # nicer automatic map layout (falls back to a circle)
+piper-tts>=1.2        # natural neural voices (falls back to system voices)
+pyttsx3>=2.90         # fallback speech when Qt has no speech engine
