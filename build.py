@@ -26,8 +26,16 @@ args = [
     f"--add-data={pkg / 'data'}{SEP}pywriter/data",
     "--collect-all=vosk",
     "--hidden-import=PySide6.QtTextToSpeech",
+    "--hidden-import=networkx",
 ]
-for optional in ("piper", "onnxruntime", "jellyfish", "networkx"):
+# Big libraries that other packages can drag in from a shared Python install but the
+# app never uses (torch alone is ~540 MB).
+for unused in ("torch", "torchvision", "torchaudio", "scipy", "pandas", "matplotlib", "PIL", "tkinter",
+               "IPython", "jupyter", "notebook", "sklearn", "tensorflow", "cv2", "sympy", "numba",
+               "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore", "PySide6.QtQuick",
+               "PySide6.QtQml", "PySide6.QtCharts", "PySide6.QtDataVisualization", "PySide6.QtPdf"):
+    args.append(f"--exclude-module={unused}")
+for optional in ("piper", "onnxruntime", "jellyfish"):
     try:
         __import__(optional)
         args.append(f"--collect-all={optional}")
