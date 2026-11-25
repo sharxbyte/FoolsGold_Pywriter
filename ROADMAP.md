@@ -1,6 +1,6 @@
-# PyWriter 2.0 Roadmap
+# FoolsGold PyWriter Roadmap
 
-Rewrite of `Pywriter Alpha Version 11.py` (Tkinter) as a Qt (PySide6) desktop app.
+Version 1.0 is a ground-up rewrite of `Pywriter Alpha Version 11.py` (Tkinter) as a Qt (PySide6) desktop app.
 Offline and local. No AI text generation; speech and language tools only *interpret* what the writer says.
 
 ## Decisions

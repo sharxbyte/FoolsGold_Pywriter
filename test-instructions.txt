@@ -1,0 +1,323 @@
+FOOLSGOLD PYWRITER 1.0 - TEST INSTRUCTIONS
+==========================================
+
+Thank you for testing! This checklist walks through every feature, with the
+normal use first and then the edge cases most likely to break. You don't have
+to do it all in one sitting. Each section stands on its own.
+
+HOW TO REPORT
+-------------
+For anything that fails, note:
+  - the section number (e.g. "4.3"),
+  - what you did, what you expected, and what happened,
+  - Windows .exe or run-from-source, and your OS,
+  - the contents of error.log, if it exists:
+      Windows: %APPDATA%\PyWriter\error.log   (paste that into Explorer's address bar)
+      macOS:   ~/Library/Application Support/PyWriter/error.log
+      Linux:   ~/.local/share/PyWriter/error.log
+Report at: https://github.com/sharxbyte/FoolsGold_Pywriter/issues
+
+Tips before you start
+  - Use a throwaway project for testing ("Test Novel 1" etc.), not real work.
+  - Check error.log after each section. A new entry there is a bug, even if
+    nothing looked wrong on screen.
+  - Mark each line: [P] pass  [F] fail  [S] skipped (and why).
+
+
+0. INSTALL AND FIRST START
+--------------------------
+0.1  Windows .exe: unzip the release, run FoolsGoldPyWriter.exe.
+     - If SmartScreen appears, "More info > Run anyway" works.
+     - The splash screen shows, then the "new project" window appears.
+0.2  From source: follow README "Run from source". `python main.py` starts.
+0.3  The window is centered on the screen and about half the screen's size.
+     (On screens narrower than about 1300 px it will be wider than half - note your
+     screen resolution if it ever goes off-screen.)
+Edge cases
+0.4  Run the .exe from a folder whose path has spaces and non-English letters
+     (e.g. "C:\Users\you\Desktop\Tést Folder\"). It should still start.
+0.5  Move the .exe out of its folder on its own (without _internal). It should
+     fail to start - that's expected; the README says to keep the folder together.
+0.6  Start it a second time while it's already open. Note what happens. Two
+     windows on the same project are not supported - don't edit in both.
+
+
+1. CREATING AND OPENING PROJECTS
+--------------------------------
+1.1  Create a Fiction project called "Test Novel". A folder
+     Documents\PyWriter Projects\Test Novel\ appears, containing Test Novel.pwdb.
+1.2  The guided interview is offered. Choose "Not now" for this test.
+1.3  File > New / Open project (Ctrl+O): create a Biography and a Non-Fiction
+     project too. The sidebar sections change to match (People / Places / Sources /
+     Topics etc.).
+1.4  Close the app and reopen it: it reopens the last project.
+1.5  Ctrl+O: switch back to "Test Novel" from the recent list.
+Edge cases - the title box should refuse these, with a clear message:
+1.6  Titles containing  \  /  :  *  ?  "  <  >  |
+1.7  An empty title, or one made of only spaces.
+1.8  A title starting or ending with a space, or ending with a period ("Draft.").
+1.9  Reserved Windows names: CON, PRN, AUX, NUL, COM1, LPT1, "con.txt".
+1.10 A very long title (over 120 characters).
+1.11 These should be ACCEPTED: "Book 2 - The Return", "L'Été", "Ånd & Ødegård",
+     "Story (Draft 3)", "鬼の物語". Check that each folder is created correctly.
+1.12 Create a project with the same title as an existing one. Note what happens
+     (it should not silently wipe the existing project).
+1.13 Choose a different parent folder for a project (e.g. a USB stick or a
+     OneDrive folder). It should work, and backups should go inside that project folder.
+1.14 Delete or rename the last project's folder while the app is closed, then
+     start the app. It should show the project chooser, not crash.
+
+
+2. GUIDED STORY INTERVIEW (Ctrl+G)
+----------------------------------
+2.1  Run the whole guided interview on Test Novel. The order is:
+     kickoff > world > characters > places > groups > plot > events > items > themes.
+2.2  Questions are full, natural sentences and use the names you've given
+     ("What does Mara look like at first glance?" rather than "Description").
+2.3  After each character/place/etc. it asks "Is there another...?".
+     Say yes once and add a second entry.
+2.4  "Skip" on a step skips it; "Stop here" ends the guided interview, and
+     everything answered so far is saved.
+2.5  Run the guided interview again: it notices the kickoff is done and asks
+     whether to redo it, and says how many characters you already have.
+Branching - check that each answer changes the questions that follow:
+2.6  World: "single linear timeline = Yes"  -> NO flashback / time-travel /
+     alternate-timeline questions.
+     Redo the world interview with "No" -> those questions now appear.
+2.7  World: scale "a single building" or "one town" vs "galaxy" -> place
+     interviews for the small scale never offer star-system / planet levels.
+2.8  World: "magic or advanced technology = No" -> no magic-system questions.
+     "Multiple species = No" -> no species questions.
+2.9  Character: choose Main -> long profile (about 80 questions). Minor -> short sketch.
+     Watch the progress bar ("12 / 80") change when you change the tier.
+2.10 Character question order is "résumé first": name/role, then
+     qualifications/experience, then appearance (height, build, hair,
+     voice, clothing...), then personality, history, relationships, arc.
+2.11 Biography / Non-Fiction projects: the kickoff asks about the subject
+     or thesis instead of genre and premise.
+
+
+3. INTERVIEW WINDOW
+-------------------
+3.1  Next (Ctrl+Enter), Back (Alt+Left), Skip, and the section jump list all work.
+3.2  Going Back shows your previous answer filled in.
+3.3  Choice questions: clicking an option works; typing your own text in
+     the "other" box works.
+3.4  Character/place name boxes autocomplete existing names as you type, and
+     commas separate several names ("Tomas Venn, Elda Rhee").
+3.5  Finish an interview: the end screen lists any new entries that were
+     created from your answers (e.g. siblings you named).
+3.6  Close the interview window with the X halfway through, then open the
+     entry: the answers you gave are saved.
+Edge cases
+3.7  Required question (the name): Next with it empty is refused with a message.
+3.8  Paste a very long answer (several thousand words) into a text answer.
+     It saves, and the entry page displays it.
+3.9  Answers with emoji, accented letters, quotes, <html>, and line breaks are
+     saved and shown exactly as typed (not interpreted as formatting).
+3.10 Interview a character whose name already exists ("Mara Venn"). It
+     should say it's adding to the existing entry, not create a duplicate.
+3.11 Name a sibling "mara venn" (lowercase) when Mara Venn exists - it should
+     link to her, not create a second Mara.
+3.12 A place: answer "Yes" to "Are there notable places inside?" - after
+     finishing, it offers a sub-location interview with the parent filled in.
+
+
+4. STORY BIBLE: LISTS, ENTRY PAGES, LINKS
+-----------------------------------------
+4.1  Each sidebar section lists its entries. Characters are grouped by Main /
+     Secondary / Minor; places are shown as a tree (city > district > building).
+4.2  Search box filters the list.
+4.3  Double-click an entry: it opens in its own tab. Double-click again:
+     the same tab is reused (no duplicates).
+4.4  Hover over a linked name (in a Sheet, the Map, or the Manuscript):
+     a short bio appears. Click it: that entry opens.
+4.5  Sheet view shows answers grouped by section. Edit view shows every
+     question as a field. Change a field, switch tabs, come back: the change is saved.
+4.6  Re-interview: the questions come back pre-filled. Change one answer, finish,
+     and check that the page shows the new value.
+4.7  Connections: add a link (e.g. Mara "enemy" Kell) and check it appears on
+     BOTH entries, reading correctly from each side (parent/child, mentor/student,
+     employer/employee).
+4.8  Remove a link; add and delete a note; add a custom field.
+4.9  Rename an entry: the tab title, lists, map and links all update.
+4.10 Quick add (+ Quick add) creates an entry with just a name.
+Edge cases
+4.11 Delete an entry that other entries link to. Its tab closes, links to it
+     disappear, and Tools > History can restore it with its links.
+4.12 Two characters with the same first name ("Mara Venn", "Mara Stone"):
+     "Mara" in an answer should NOT silently pick one.
+4.13 Open 15+ tabs at once; close them all; no errors.
+4.14 Make a place its own parent, or A inside B inside A. It should be refused or
+     handled without freezing the place tree.
+
+
+5. TALK MODE (Ctrl+T)
+---------------------
+Type these one at a time into a fresh Fiction project, answering PyWriter's
+questions as it asks them:
+5.1  "Mara is the protagonist."           -> asks what Mara is -> "character"
+                                            -> Mara is created as a main character.
+5.2  "She has red hair and lives in Port Vell."
+                                         -> hair saved on Mara; Port Vell created
+                                            and linked "lives in".
+5.3  "Tomas is Mara's older brother."     -> "character" -> sibling link both ways,
+                                            then asks Tomas's tier.
+5.4  "Mara works for the Harbor Guild."   -> group created, linked.
+5.5  "Mara and Tomas are rivals."         -> rival link.
+5.6  "tell me about Mara"                 -> spoken/written summary.
+5.7  "change Mara's age to 34"            -> age field updated.
+5.8  "open Port Vell"                     -> page opens.
+5.9  "interview Tomas"                    -> his interview starts, pre-filled.
+5.10 "add a character named Elda"         -> created; asks tier.
+5.11 "delete Tomas" -> "yes" -> "undo"    -> Tomas is back with his links.
+5.12 "help"                               -> lists what you can say.
+Edge cases
+5.13 Nonsense ("blorf wibble zzz") -> kept as a note, not lost. Check the
+     entry's or project's Notes.
+5.14 Answer PyWriter's question with something unrelated (it asks "character
+     or place?" and you type "the weather is nice") -> it moves on sensibly
+     and keeps what you said as a note.
+5.15 Lowercase names ("tell me about mara") still find Mara.
+5.16 "Tomas works for a living" should NOT create a group called "A Living".
+5.17 One long paragraph with several sentences and no punctuation (as
+     dictation produces) - see how much is filed correctly; report anything filed
+     onto the wrong person.
+5.18 Talk mode in a Biography project with real-person phrasing
+     ("My grandmother was born in Cork in 1931").
+
+
+6. VOICE (needs a microphone and speakers/headset)
+--------------------------------------------------
+Setup
+6.1  Voice > Download speech model > Small English. The progress bar moves,
+     and Cancel works. Start again: it resumes or restarts cleanly.
+6.2  Settings > Reading voice: try each engine (modern, classic, Piper after
+     "Get natural voices..."). Test voice plays at your speed, pitch and volume.
+6.3  Settings > Listening > Microphone: pick your mic, Refresh devices, and watch
+     the level meter move when you speak.
+Read-aloud and dictation
+6.4  In an interview: F2 reads the question, F3 reads your answer, Esc stops.
+6.5  F4 dictation inserts your words at the cursor. "comma", "full stop",
+     "new paragraph" become punctuation.
+Narration mode (F5) - the main hands-free feature
+6.6  Turn it on: the question is read, then it listens (meter moves).
+6.7  Answer, then say "next question, confirm": it saves and reads the next one.
+6.8  Say just "next question": it asks you to confirm first.
+6.9  "go back", "repeat the question", "read my answer", "skip question",
+     "scratch that", "stop listening", "end interview" each do what they say.
+6.10 Stay silent 10 seconds: it asks if you're finished. Stay silent again: it pauses.
+6.11 On a choice question say an option ("main character", "yes"): it confirms.
+6.12 Say a common name with several spellings ("Catherine"): spelling choices
+     are offered. Say an invented name ("Zorblax"): it spells it back, and you can
+     correct it letter by letter ("Z, O, R, B, L, A, X").
+6.13 Talk mode mic button: speak a sentence from section 5 and check it's filed.
+6.14 Open the project folder: <Title>_voice-transcript.txt has timestamped
+     lines for what was heard, said and answered.
+Edge cases
+6.15 Unplug the USB mic or headset during narration. It should show an error or
+     fall back to the default device, not freeze. Plug it back and Refresh devices.
+6.16 Start narration before any speech model is downloaded. You should get a clear
+     message explaining how to get one.
+6.17 Noisy room (a fan or music playing): try with Background noise reduction on and off.
+6.18 Settings > Listening > Save audio: WAV, FLAC, MP3. A file appears in
+     the project's audio\ folder for each listening session and plays back.
+6.19 Talk loudly over PyWriter while it is reading. It should not hear and file
+     its own voice. (Report if it transcribes itself, especially on laptop
+     speakers without a headset.)
+
+
+7. MAP, TIMELINE, MANUSCRIPT
+----------------------------
+7.1  Map: all entries appear, coloured by kind, with relation labels. Drag a node,
+     switch sections and come back: the position is kept. Restart: still kept.
+7.2  Map filter checkboxes show and hide kinds; Auto-arrange; Fit to window;
+     scroll to zoom; double-click a node to open it.
+7.3  Timeline: events are in story order; drag to reorder; the order persists.
+7.4  Manuscript: add chapters/scenes, type, and check the word count. Names of
+     characters/places in the text appear under "In this scene" as links.
+7.5  Manuscript dictation and read-aloud buttons work.
+7.6  Drag scenes to reorder them; rename; delete.
+Edge cases
+7.7  Map with 0 entries, and with 100+ entries (use Quick add or Talk to make
+     many): no freeze, and Fit to window works.
+7.8  A 10,000-word scene: typing stays responsive, and it saves.
+
+
+8. SAVING, HISTORY, BACKUPS (the most important section)
+---------------------------------------------------------
+8.1  No Save button: make an edit, then kill the app (Task Manager > End task).
+     Reopen: the edit is there.
+8.2  Project folder contains: .pwdb, "<Title> - Story Bible.md" (open it
+     in Notepad - IDs like CHR-0001 match the app), backups\ with timestamped copies.
+8.3  backups\ gets a new snapshot on open, on close, after each interview,
+     and every 5 minutes while you work (only if something changed). Older
+     snapshots are never changed (check their modified dates).
+8.4  Tools > History (Ctrl+H): every change is listed with old/new values.
+     Revert a single change - only that change is undone.
+8.5  History: restore an older snapshot. The current state is snapshotted first,
+     so restoring that newer snapshot brings you back. Test both directions.
+8.6  Tools > Undo last change (Ctrl+Shift+Z).
+8.7  Tools > Back up now: a new snapshot appears.
+8.8  File > Export Story Bible / Manuscript: files open in the folder.
+Edge cases
+8.9  Open the Story Bible .md in Word or Notepad (keeping it open) while you
+     keep editing in PyWriter. PyWriter must not crash; report any error.
+8.10 Project in a OneDrive / Dropbox folder while it's syncing.
+8.11 Read-only project folder, or a full USB stick: you should get a clear
+     message, and no silent data loss.
+8.12 Settings > Backups: change the interval and the "keep every snapshot" option, and
+     check they are respected.
+8.13 File > Import from PyWriter v10/v11 (.json): import an old project.
+     Answers land in matching fields; the rest appears under "Imported from v11".
+
+
+9. SETTINGS, APPEARANCE, ACCESSIBILITY
+--------------------------------------
+9.1  View > Theme: Light, Dark, High contrast. All text is readable in each,
+     including tooltips, the Map and dialogs.
+9.2  Ctrl+= / Ctrl+- text size, many times in a row. Layout stays usable,
+     and the setting is remembered after restart.
+9.3  F11 distraction-free mode, on and off.
+9.4  Do a whole interview with the keyboard only (Tab, Enter, Ctrl+Enter,
+     Alt+Left). No mouse needed.
+9.5  Windows display scaling 100%, 150%, 200%: nothing cut off.
+9.6  Small screen (1366x768 laptop): the main window and interview window fit
+     on screen, with nothing off the edge.
+9.7  Tools > Diagnostics and Help > About open and show sensible info (version 1.0.0).
+
+
+10. OPTIONAL LOCAL AI ASSISTANT
+-------------------------------
+10.1 Tools > Local AI assistant: the explanation, sizes and training-data notes
+     are clear.
+10.2 Download the recommended model, enable it, and repeat Talk tests 5.1-5.5
+     plus freer phrasing ("So basically Mara's got this older brother, Tomas,
+     who's always bailing her out"). It should file facts and never invent text
+     you didn't say.
+10.3 Disable (the file is kept) and Delete (disk space is freed) both work.
+10.4 On a low-memory PC (under 8 GB), note how responsive Talk mode is with it on.
+
+
+11. LINUX / macOS (from source)
+--------------------------------
+11.1 Fresh venv, `pip install -r requirements.txt` (or the minimal list in
+     the README if llama-cpp-python fails). Note any package that failed.
+11.2 Sections 1-5 and 8 work as on Windows.
+11.3 Read-aloud uses the system voices (speech-dispatcher / macOS voices),
+     or Piper.
+11.4 Microphone works (Linux: PipeWire/PulseAudio default; macOS: after
+     granting microphone permission).
+11.5 Projects go to ~/Documents/PyWriter Projects/.
+
+
+SMOKE TEST (5 minutes - do this on every new build)
+---------------------------------------------------
+[ ] App starts; new Fiction project "Smoke"; folder is created.
+[ ] Add one Main character through the interview (answer about 10 questions, then Finish).
+[ ] Double-click the character; edit a field; switch tabs; reopen; edit kept.
+[ ] Talk: "She lives in Port Vell." -> Port Vell created and linked.
+[ ] Map shows both, linked.
+[ ] Ctrl+H shows the changes; revert one.
+[ ] Close the app; reopen; everything is there; backups\ has snapshots; Story Bible.md is up to date.
+[ ] error.log has no new entries.

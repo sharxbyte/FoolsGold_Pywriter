@@ -91,7 +91,9 @@ class EntityListPanel(QWidget):
         hint = QLabel("Double-click to open · hover for a summary" +
                       (" · drag to reorder" if kind == "event" else ""))
         hint.setObjectName("muted")
-        btns.addWidget(hint)
+        hint.setWordWrap(True)  # never let a hint force the window wider than the screen
+        hint.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        btns.addWidget(hint, 1)
         lay.addLayout(btns)
         self.tree = EntityTree(ctx, kind)
         self.tree.itemActivated.connect(self._open)
@@ -141,8 +143,22 @@ class EntityListPanel(QWidget):
         elif self.kind == "location":
             by_parent: dict = {}
             ids = {e.id for e in ents}
+            parent_of = {e.id: e.parent_id for e in ents}
+
+            def in_loop(eid: str) -> bool:
+                # "A is inside B, B is inside A" (or a place inside itself) would hide
+                # both places from the tree, so such places are shown at the top level
+                seen, cur = {eid}, parent_of.get(eid)
+                while cur in ids:
+                    if cur in seen:
+                        return True
+                    seen.add(cur)
+                    cur = parent_of.get(cur)
+                return False
+
             for e in ents:
-                by_parent.setdefault(e.parent_id if e.parent_id in ids else None, []).append(e)
+                pid = e.parent_id if e.parent_id in ids and not in_loop(e.id) else None
+                by_parent.setdefault(pid, []).append(e)
 
             def add(parent_item, pid, depth=0):
                 for e in sorted(by_parent.get(pid, []), key=lambda x: x.name.lower()):
@@ -311,5 +327,5 @@ class OverviewPanel(QWidget):
             lab.setObjectName("muted")
             cl.addWidget(num)
             cl.addWidget(lab)
-            self.stats.addWidget(card, 0, col)
+            self.stats.addWidget(card, col // 6, col % 6)  # wrap so small screens still fit
             col += 1

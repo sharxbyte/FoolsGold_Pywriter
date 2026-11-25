@@ -224,7 +224,7 @@ class Interpreter:
             if eid:
                 self.focus = eid
                 return Reply(f"Opening {self.store.get(eid).label}.", open_entity=eid)
-            return Reply(f"I couldn't find anything called {m.group(1)}.")
+            return Reply(f"I couldn't find anything called {self._orig(text, m.group(1))}.")
 
         m = re.match(r"^(?:tell me about|who is|who's|what is|what's|describe|read(?: me)?|remind me about)\s+(.+)$",
                      low)
@@ -234,8 +234,9 @@ class Interpreter:
                 self.focus = eid
                 return Reply(spoken_summary(self.store, eid))
             if len(m.group(1).split()) <= 4:
-                return Reply(f"I don't have anything called {m.group(1)} yet. You can say "
-                             f"'add a character named {m.group(1)}', or just tell me about them.")
+                said = self._orig(text, m.group(1))
+                return Reply(f"I don't have anything called {said} yet. You can say "
+                             f"'add a character named {said}', or just tell me about them.")
 
         m = re.match(rf"^(?:interview(?: me)?(?: about| on| for)?|start (?:an |the )?interview (?:for|about|on|with))"
                      rf"\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(.+)$", low)
@@ -248,8 +249,9 @@ class Interpreter:
             if eid:
                 e = self.store.get(eid)
                 return Reply(f"Starting the interview for {e.label}.", start_interview=(e.kind, eid))
-            return Reply(f"I don't have anyone or anything called {target} yet. "
-                         f"Say 'add a character named {target}' first.")
+            said = self._orig(text, target)
+            return Reply(f"I don't have anyone or anything called {said} yet. "
+                         f"Say 'add a character named {said}' first.")
 
         m = re.match(r"^(?:delete|remove)\s+(.+)$", low)
         if m:
@@ -260,7 +262,7 @@ class Interpreter:
 
         m = re.match(r"^(?:change|set|update|make)\s+(.+?)'s\s+(.+?)\s+(?:to|as)\s+(.+)$", low)
         if m:
-            return self._explicit_edit(m.group(1), m.group(2), self._orig(text, m.group(3)))
+            return self._explicit_edit(self._orig(text, m.group(1)), m.group(2), self._orig(text, m.group(3)))
 
         return self._statements(text)
 
@@ -322,14 +324,14 @@ class Interpreter:
             self.focus = existing.id
             msg = f"{existing.label} already exists, so I'll add to it."
             if sentences:
-                return self._statements(" ".join(sentences), prefix=msg)
+                return self._statements(_rejoin(sentences), prefix=msg)
             return Reply(msg, open_entity=existing.id)
         eid = self.store.create_entity(kind, name, source="talk")
         self.focus = eid
         parts = [f"I've added {name} as a new {KINDS[kind][1].lower()}."]
         changed = [eid]
         if sentences:
-            r = self._statements(" ".join(sentences), announce=False)
+            r = self._statements(_rejoin(sentences), announce=False)
             changed += r.changed
             if r.text:
                 parts.append(r.text)
@@ -486,6 +488,7 @@ class Interpreter:
             (r"\s+(?:is|was|comes|came)\s+(?:originally\s+)?from\s+(?:the\s+)?(.+)$", "born in", "location"),
             (r"\s+(?:was born|was created|was made)\s+(?:in|at|on)\s+(?:the\s+)?(.+)$", "born in", "location"),
             (r"\s+works?\s+(?:at|in|on)\s+(?:the\s+)?(.+)$", "works in", "location"),
+            (r"\s+(?:works?|worked)\s+for\s+(?:the\s+)?(.+)$", "employer", "group"),
             (r"\s+(?:is|was)\s+(?:located|found|situated)\s+(?:in|on|at|inside)\s+(?:the\s+)?(.+)$", "located in", "location"),
             (r"\s+(?:is|was)\s+(?:a\s+)?(?:member|part)\s+of\s+(?:the\s+)?(.+)$", "member of", "group"),
             (r"\s+(?:belongs|belonged)\s+to\s+(?:the\s+)?(.+)$", "member of", "group"),
@@ -504,7 +507,7 @@ class Interpreter:
                 created = []
                 if not tgt:
                     orig_target = self._orig(s, target_text)
-                    if rel == "leader of" and not (re.search(r"[A-Z]", orig_target) or
+                    if rel in ("leader of", "employer") and not (re.search(r"[A-Z]", orig_target) or
                                                    re.match(r"the\s", target_text)):
                         break  # "Mara runs a bakery" - not necessarily a named group
                     tgt = self.store.create_entity(kind, self._clean_name(self._orig(s, target_text)), source="talk")
@@ -901,8 +904,18 @@ def split_sentences(text: str) -> list[str]:
     out = []
     for p in parts:
         # dictation rarely has punctuation: split on " and she/he/they " as clause breaks
-        out.extend(x for x in re.split(r"\s+(?:and|but)\s+(?=(?:she|he|they|it)\b)", p, flags=re.I) if x.strip())
+        for x in re.split(r"\s+(?:and|but)\s+(?=(?:she|he|they|it)\b)", p, flags=re.I):
+            if not x.strip():
+                continue
+            # "She has red hair and lives in Port Vell" -> the second clause keeps the same subject
+            clauses = re.split(rf",?\s+(?:and|but)\s+(?:also\s+)?(?=(?:{_CLAUSE_VERBS})\b)", x, flags=re.I)
+            out.append(clauses[0])
+            out.extend("they " + c for c in clauses[1:] if c.strip())
     return out
+
+
+_CLAUSE_VERBS = (r"lives|lived|resides|resided|works|worked|comes|came|was born|belongs|belonged|"
+                 r"leads|led|runs|ran|rules|ruled|is a member|was a member")
 
 
 def tier_phrase(tier: str) -> str:
@@ -913,7 +926,7 @@ def tier_phrase(tier: str) -> str:
 def rel_phrase(rel: str) -> str:
     return {"lives in": "lives in", "born in": "comes from", "works in": "works at",
             "located in": "is located in", "member of": "is a member of",
-            "leader of": "leads"}.get(rel, rel)
+            "leader of": "leads", "employer": "works for"}.get(rel, rel)
 
 
 def label_for(lib: Library, store: ProjectStore, kind: str, key: str) -> str:
@@ -931,3 +944,8 @@ HELP_TEXT = (
     "You can also say: add a character named Elda; open Port Vell; tell me about Mara; "
     "interview Tomas; change Mara's age to 34; delete Tomas; or undo."
 )
+
+
+def _rejoin(sentences: list[str]) -> str:
+    """Join already-split sentences so split_sentences() splits them the same way again."""
+    return " ".join(s.strip() if s.strip()[-1:] in ".!?" else s.strip() + "." for s in sentences if s.strip())

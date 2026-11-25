@@ -1,280 +1,439 @@
 # FoolsGold PyWriter
 
-An offline, voice-friendly interviewer and story bible for writers.
+**An offline, voice-friendly interviewer and story bible for writers.**
 
-PyWriter interviews you about your project one question at a time. That covers characters, places, groups, plot, timeline, themes, sources and more. It files every answer into a linked, searchable story bible. You can type, dictate, or go completely hands-free: it reads each question aloud and records your spoken answer.
+PyWriter asks you about your project one question at a time: your characters, places, groups, plot, timeline, themes and sources. It files every answer into a linked, searchable story bible. You can type, dictate, or work completely hands-free, with each question read aloud and your spoken answer recorded.
 
-**It runs entirely on your computer and does not use AI to write anything.** Speech recognition, text-to-speech and the Talk-mode interpreter only *understand and organize* what you say. The words are yours.
+> **PyWriter does not write for you.** Speech recognition, read-aloud and the Talk-mode interpreter only *understand and organize* what you say. Every word in your story bible is yours. Everything runs on your own computer, and nothing is uploaded.
+
+**Status:** 1.0, the first public test release. Please report anything that breaks (see [Reporting problems](#reporting-problems)).
+
+---
+
+## Contents
+
+- [Download and run (Windows)](#download-and-run-windows)
+- [Run from source (Windows, macOS, Linux)](#run-from-source-windows-macos-linux)
+- [Your first ten minutes](#your-first-ten-minutes)
+- [Features](#features)
+- [Voice setup](#voice-setup)
+- [Voice commands and keyboard shortcuts](#voice-commands-and-keyboard-shortcuts)
+- [How saving works](#how-saving-works)
+- [Where things are stored](#where-things-are-stored)
+- [Using other languages](#using-other-languages)
+- [Downloads, privacy and training data](#downloads-privacy-and-training-data)
+- [Building the Windows app yourself](#building-the-windows-app-yourself)
+- [Project layout](#project-layout)
+- [Reporting problems](#reporting-problems)
+- [Credits](#credits)
+
+---
+
+## Download and run (Windows)
+
+1. Go to the [Releases page](https://github.com/sharxbyte/FoolsGold_Pywriter/releases) and download `FoolsGoldPyWriter-<version>-windows-x64.zip`.
+2. Unzip it anywhere, e.g. `Documents\FoolsGoldPyWriter\`. **Keep the folder together:** the `.exe` needs the `_internal` folder next to it.
+3. Double-click **`FoolsGoldPyWriter.exe`**.
+
+**Windows SmartScreen:** the app isn't code-signed yet, so Windows may show *"Windows protected your PC"*. Click **More info ▸ Run anyway**. You only need to do this once.
+
+The download has no speech or AI models in it, so it stays small. PyWriter offers to download them from inside the app when you want them (see [Voice setup](#voice-setup)).
+
+To update, unzip the new version over the old folder, or into a new folder. Your projects and settings are stored elsewhere and aren't touched.
+
+---
+
+## Run from source (Windows, macOS, Linux)
+
+Run from source if you're on macOS or Linux, if you'd rather not run a downloaded `.exe`, or if you want to change the question packs or code.
+
+### Requirements
+
+- **Python 3.10 – 3.12** (3.11 recommended). On Windows, tick *"Add python.exe to PATH"* when installing.
+- **Git** (optional; you can also download the source as a ZIP from GitHub).
+
+### 1. Get the code
+
+```bash
+git clone https://github.com/sharxbyte/FoolsGold_Pywriter.git
+cd FoolsGold_Pywriter
+```
+
+### 2. Create a virtual environment (recommended)
+
+**Windows (PowerShell or Command Prompt):**
+```bat
+py -3.11 -m venv .venv
+.venv\Scripts\activate
+```
+
+**macOS / Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install the dependencies
+
+**Full install**, with every feature:
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+**Minimal install**, if the full install fails (usually because `llama-cpp-python` has to compile). This gives you interviews, Talk mode, speech recognition and read-aloud without the optional AI assistant:
+```bash
+python -m pip install PySide6 PyYAML numpy vosk sounddevice soundfile jellyfish networkx pyttsx3
+```
+
+**Optional extras:**
+
+| Package | Adds | Notes |
+|---|---|---|
+| `piper-tts` | Natural neural voices | Recommended; prebuilt wheels on all three systems |
+| `llama-cpp-python` | Optional local AI assistant for Talk mode | Prebuilt CPU wheels: `pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu` |
+| `pycaw` | Uses Windows' *default communication device* for mic and speaker | Windows only; installed automatically by requirements.txt |
+
+### 4. Run it
+
+```bash
+python main.py
+```
+
+Options:
+
+```bash
+python main.py "path/to/My Novel.pwdb"   # open a specific project
+python main.py --no-splash               # skip the splash screen
+python main.py --no-guide                # don't offer the guided interview on start-up
+```
+
+### Linux notes
+
+Qt, audio and speech need a few system packages. On Debian or Ubuntu:
+
+```bash
+sudo apt install python3-venv libportaudio2 libxcb-cursor0 libxkbcommon-x11-0 \
+                 speech-dispatcher espeak-ng libegl1
+```
+
+- `libportaudio2` is needed for the microphone (`sounddevice`).
+- `libxcb-cursor0` is needed for Qt 6 on X11. If the window won't open, run with `QT_DEBUG_PLUGINS=1 python main.py` to see what's missing.
+- `speech-dispatcher` / `espeak-ng` provide the system read-aloud voices. Piper voices sound much better and need no system packages.
+- On Wayland, Qt normally works as-is. If it doesn't, try `QT_QPA_PLATFORM=xcb python main.py`.
+- Fedora: `sudo dnf install portaudio xcb-util-cursor speech-dispatcher espeak-ng`.
+
+To get a launcher icon, create `~/.local/share/applications/foolsgold-pywriter.desktop`:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=FoolsGold PyWriter
+Exec=/path/to/FoolsGold_Pywriter/.venv/bin/python /path/to/FoolsGold_Pywriter/main.py
+Icon=/path/to/FoolsGold_Pywriter/pywriter/resources/splash.png
+Categories=Office;
+```
+
+### macOS notes
+
+- Allow microphone access when macOS asks. If you missed the prompt, go to **System Settings ▸ Privacy & Security ▸ Microphone** and enable your terminal app.
+- Read-aloud uses the system voices. Add more in **System Settings ▸ Accessibility ▸ Spoken Content**.
+
+---
+
+## Your first ten minutes
+
+1. **Create a project.** Pick a project type (**Fiction**, **Biography** or **Non-Fiction**) and type a working title. The title becomes the project's folder name. Characters that aren't allowed in folder names (`\ / : * ? " < > |`) are blocked as you type.
+2. **Start the Guided Story Interview** (offered straight away, or **Ctrl+G**). It walks through the whole project in a sensible order. For fiction, that's the big picture, then world and scale, then characters, places, groups, plot, timeline, items and themes. Answer what you can and skip the rest. You can stop at any time; everything is already saved.
+3. **Browse what you've built.** The left sidebar lists every kind of entry. **Double-click** any entry to open its page. Hover over a linked name anywhere to see a short summary, and click it to jump to that entry.
+4. **Try Talk mode** (**Ctrl+T**). Type or say something like *"Mara is the protagonist. She has red hair and lives in Port Vell."* PyWriter files it for you: Mara becomes a main character with red hair, and Port Vell becomes a linked place.
+5. **Turn on voice** when you're ready. Go to **Voice ▸ Download speech model…** (one-time, about 40 MB), then press **F5** in any interview for hands-free narration mode.
 
 ---
 
 ## Features
 
-| | |
-|---|---|
-| **Guided Story Interview** | Walks through the whole project: kickoff → world and scope → characters → places → groups → plot → timeline → items → themes. After each interview it asks "Is there another…?" |
-| **Branching interviews** | Early answers decide later questions. A single linear timeline hides the flashback and time-travel questions. A story set in one town never asks about star systems. A minor character gets a short sketch; a main character gets the full ~80-question profile. |
-| **Résumé-first character interviews** | Name and role, then qualifications and experience, then first impressions (height, build, hair, voice, clothing…), then personality, inner life, background, relationships and arc. |
-| **Location levels** | Every place has a level (room → building → … → planet → galaxy → dimension → timeline) and a parent place, so the setting forms a tree. "Are there notable places inside?" leads straight into a sub-location interview. |
-| **Linked story bible** | Names you give in answers become linked entries automatically, e.g. "Who are her siblings?" → *Tomas Venn* is created and linked. Hover any linked name to see a short bio; click it to open the full sheet. |
-| **Entry pages** | Double-click any entry. **Sheet** is the read view with links; **Edit** shows every question as an editable field. Each page also has **Re-interview** (answers pre-filled), connections, places inside, mentions and notes. |
-| **Talk mode** (Ctrl+T) | Just describe your story: "Mara is the protagonist. She has red hair and lives in Port Vell. Tomas is Mara's older brother." PyWriter files it. It asks before creating anything it doesn't recognize, and offers to start an interview. |
-| **Narration mode** (F5) | Hands-free interviews. The question is read aloud, then PyWriter listens. Say "next question, confirm" to move on. After 10 seconds of silence it asks whether you're finished; after another silence it pauses. |
-| **Name spelling** | When a name comes in by voice, PyWriter checks it. Names with several common spellings (Catherine / Katherine / Kathryn) are offered as choices. Invented names are read back letter by letter, and you can spell a correction: "M, A, R, A, space, V, E, N, N". |
-| **Natural voices** | Windows voices (modern WinRT or classic SAPI), or optional **Piper** neural voices that sound far more natural and still run offline. |
-| **Map** | A relationship graph with drag-to-arrange nodes (positions are saved), colors per kind of entry, and dashed lines for place containment. |
-| **Manuscript** | Chapters and scenes with dictation, read-aloud, word count, and links to the people and places mentioned in each scene. |
-| **History and backups** | Every change is recorded and can be reverted individually. Full snapshots are taken on open, on close, after interviews, and every 5 minutes. Restore any snapshot; the current state is snapshotted first, so a restore can be undone. |
-| **Readable export** | `<Title> - Story Bible.md` is rewritten on every save. Each entry carries the same ID as the database (CHR-0001, LOC-0003…). |
-| **Accessibility** | Large question text, light, dark and high-contrast themes, adjustable text size, keyboard shortcuts for everything, and full voice control of interviews. |
+### Interviews that adapt to your answers
+
+- **Branching:** early answers decide which questions come later.
+  - Say the story follows a single linear timeline, and the flashback and time-travel questions are skipped.
+  - Set it in one town, and you're never asked about star systems.
+  - A minor character gets a short sketch; a main character gets the full profile of about 80 questions.
+- **Résumé-first character interviews:** questions come in the order you'd learn about someone you're interviewing for a job:
+  1. Name, role, qualifications and experience
+  2. First impressions: height, build, hair, voice, clothing and demeanour
+  3. Personality and inner life
+  4. Background
+  5. Relationships and arc
+- **Complete-sentence questions** make the interview feel like a conversation, and they read aloud naturally.
+- **Location levels:** every place has a level and a parent place, so your setting forms a tree. The levels run room → building → district → settlement → region → country → planet → star system → galaxy → dimension → timeline. Answering "yes" to *"Are there notable places inside?"* leads straight into a sub-location interview.
+- **"Is there another…?"** follows each interview, so you can add characters or places back-to-back.
+- **Re-interview** from any entry's page. Every question comes back with your earlier answers filled in, ready to edit.
+
+### A linked story bible
+
+- **Automatic linking:** names you give in answers become linked entries. For example, *"Who are her siblings?" → "Tomas Venn"* creates Tomas, linked to her as a sibling. Duplicates are avoided: if Tomas already exists, the existing entry is used.
+- **Entry pages:** each page has three parts:
+  - **Sheet:** a readable summary with links.
+  - **Edit:** every question as an editable field.
+  - Connections, places inside, mentions elsewhere, and notes.
+- **Readable IDs** such as CHR-0001, LOC-0003 and EVT-0002 are the same in the app, the database and the exported Story Bible.
+- **Map:** a relationship graph. Drag nodes to arrange them (positions are saved). Colours show each kind of entry, and dashed lines show which places are inside which.
+- **Manuscript:** chapters and scenes with dictation, read-aloud, word count, and links to the people and places mentioned in each scene.
+
+### Talk mode (Ctrl+T)
+
+Describe your story in plain sentences, typed or spoken. PyWriter pulls out facts (appearance, age, occupation…) and relationships (sibling of, lives in, works for, member of…). If it meets a name it doesn't know, it asks whether that's a character, place, group, item or event. Anything it can't file is kept as a note, so nothing you say is lost.
+
+You can also give it commands: *open Port Vell · tell me about Mara · interview Tomas · add a character named Elda · change Mara's age to 34 · delete Tomas · undo*.
+
+Talk mode uses built-in language rules. An **optional** small AI model that runs on your computer can be switched on to understand freer phrasing (see [Downloads, privacy and training data](#downloads-privacy-and-training-data)).
+
+### Voice
+
+- **Read aloud:** read the question (F2), read your answer (F3), or both.
+- **Dictation** into any text box (F4). Say "comma", "full stop", "question mark", "new line" or "new paragraph" for punctuation.
+- **Narration mode** (F5) runs interviews hands-free.
+  - PyWriter reads the question, then listens.
+  - Say *"next question, confirm"* to move on.
+  - After 10 seconds of silence it asks whether you're finished. After another silence it pauses.
+- **Name spelling:** spoken names are checked.
+  - Names with several common spellings (Catherine / Katherine) are offered as choices.
+  - Invented names are spelled back letter by letter. You can spell a correction aloud: *"M, A, R, A, space, V, E, N, N"*.
+- **Voices:** choose between Windows modern or classic voices and optional **Piper** neural voices, which sound far more natural and still run offline. Speed, pitch and volume are adjustable.
+- **Voice transcript:** each project keeps a timestamped, append-only text record of everything heard, said and answered. Audio recording is optional and off by default.
+
+### Safety nets
+
+- **Autosave:** there's no Save button. Changes are saved as you type, when you finish an interview, when you switch tabs, and when you close the window.
+- **History** (Ctrl+H): every change is kept with its old and new value. You can revert any single change or bring back deleted entries.
+- **Snapshots:** complete copies of the project are taken on open, on close, after each interview, and every 5 minutes while you work. Snapshots are never edited afterwards. Restoring one takes a snapshot of the current state first, so a restore can be undone too.
+- **Story Bible export:** `<Title> - Story Bible.md` is a plain-text Markdown copy of everything. It's rewritten automatically and can be opened in any editor.
+- **Import:** **File ▸ Import from PyWriter v10/v11** brings in projects from the old Tkinter version. Anything that doesn't match a new question cleanly is kept under "Imported from v11".
+
+### Accessibility
+
+Large question text; light, dark and high-contrast themes; adjustable text size (Ctrl+= / Ctrl+-); distraction-free full screen (F11); keyboard shortcuts for everything; and full voice control of interviews.
 
 ---
 
-## Install and run
+## Voice setup
 
-Requires **Python 3.10+** on Windows, macOS or Linux.
+### Speech recognition (so PyWriter can hear you)
 
-```bash
-cd PyWriter
-python -m pip install -r requirements.txt
-python main.py
-```
+Go to **Voice ▸ Download speech model…**. This is a one-time download, and after it recognition works fully offline.
 
-On first launch, choose a project type (Fiction, Biography, Non-Fiction) and a working title. The title becomes the project folder (characters that aren't allowed in folder names are blocked as you type):
-
-```
-Documents/PyWriter Projects/<Title>/
-    <Title>.pwdb                 ← the project database (SQLite)
-    <Title> - Story Bible.md     ← readable export, regenerated on save
-    <Title> - Manuscript.md      ← manuscript export
-    backups/                     ← timestamped full snapshots
-```
-
-### Turning on speech recognition
-
-Go to **Voice ▸ Download speech model…**. This is a one-time download from alphacephei.com; after that, recognition is fully offline. There are two choices:
-
-- *Small English model* (~40 MB): fast and works on any computer.
+- *Small English model* (~40 MB): fast, and works on any computer.
 - *Larger English model* (~128 MB): noticeably more accurate.
 
-Models are stored in your user data folder (see *Where things are stored*).
-
-### Getting more natural voices
+### Natural voices (so PyWriter sounds good)
 
 Go to **Tools ▸ Settings ▸ Reading voice**:
 
-- **Engine:** choose *Windows modern voices*, *Windows classic voices*, or *Natural neural voices (Piper)*.
-- **Get natural voices…** downloads Piper voices (about 60–110 MB each) from the public [Rhasspy Piper voice library](https://huggingface.co/rhasspy/piper-voices). The list shows where each voice's training recordings came from. *en_US-ljspeech-high*, *en_GB-cori-high* and *en_US-joe* were trained only on public-domain or donated recordings.
-- **Speed**, **pitch** and **volume** apply to every engine. Use **Test voice** to hear the result.
+- **Engine:** *Windows modern voices*, *Windows classic voices*, or *Natural neural voices (Piper)*.
+- **Get natural voices…** downloads Piper voices (60–110 MB each). The list shows where each voice's training recordings came from.
+- **Test voice** plays a sample with your speed, pitch and volume settings.
 
-To add more Windows voices, go to Windows **Settings ▸ Time & language ▸ Speech ▸ Manage voices ▸ Add voices**.
+To add more Windows voices, go to **Windows Settings ▸ Time & language ▸ Speech ▸ Manage voices ▸ Add voices**.
 
 ### Microphone and speaker
 
-PyWriter finds the audio devices of whoever is running it each time it starts. Nothing is tied to one computer.
+PyWriter finds your audio devices each time it starts, so it works on whichever computer it runs on.
 
-- **Windows:** by default it uses the devices Windows has set as the *default communication device*. That's the microphone and speaker Windows uses for calls, as set in *Sound settings ▸ More sound settings*.
-- **Linux:** it follows the PipeWire/PulseAudio default chosen in your system sound settings.
-- **macOS:** it uses the system default.
+- **Windows** uses your *default communication device*: the mic and speaker Windows uses for calls (**Sound settings ▸ More sound settings**).
+- **Linux** follows the PipeWire/PulseAudio default.
+- **macOS** uses the system default.
 
-To pick a specific microphone or speaker, go to **Settings ▸ Listening ▸ Microphone** and **Settings ▸ Reading voice ▸ Speaker**. Use **Refresh devices** after plugging something in. Devices are remembered by name, so a choice survives reboots and USB re-plugging. If a chosen device is unplugged, PyWriter falls back to the default.
+To choose specific devices, go to **Settings ▸ Listening ▸ Microphone** and **Settings ▸ Reading voice ▸ Speaker**. Click **Refresh devices** after plugging something in. Devices are remembered by name. If a chosen device is unplugged, PyWriter falls back to the default.
 
-> Speaker choice applies to natural (Piper) and classic Windows voices. Modern Windows voices always play on the system default speaker. If your communication speaker differs from the default, PyWriter picks an engine it can route to it.
+> *Modern Windows voices* always play on the system default speaker. If you choose a different speaker, use the classic or Piper voices.
 
-**Mic processing** is applied before speech recognition, and each option can be switched on or off:
+**Mic processing**, under **Settings ▸ Listening**:
 
 | Option | What it does | Default |
 |---|---|---|
-| Compressor | Evens out loud and quiet speech so soft words are still recognized | On |
-| Background noise reduction | Learns steady background noise (fans, hum, hiss) and removes it. Helps in noisy rooms, but can slightly reduce accuracy in quiet ones. | Off |
-| Noise gate | Mutes the mic between words. It's always applied to saved recordings; for recognition it can clip very quiet words. | Off |
-
-### Voice transcript and recordings
-
-- Every project keeps **`<Title>_voice-transcript.txt`** in its folder. It's an append-only, timestamped record of everything PyWriter heard, everything it said, everything typed in Talk mode, and every interview answer. Lines are only ever added, never changed or removed.
-- **Audio recording** is off by default; only the text transcript is kept. In **Settings ▸ Listening ▸ Save audio**, choose WAV (largest), FLAC (lossless, about half the size) or MP3 (smallest). Each listening session is then saved in the project's `audio/` folder.
-
-### Optional local AI assistant
-
-PyWriter can use a small language model, **run entirely on your computer**, to understand freer phrasing in Talk mode. It never writes: it may only return filing actions in a fixed format, and any value that isn't mostly your own words is replaced by your original sentence. It sends nothing anywhere, and your conversation is stored only in your project.
-
-PyWriter offers it once on first run. You can open it any time from **Tools ▸ Local AI assistant…**. That window explains:
-- what each model is and how it was trained,
-- the disk and memory it needs (about 1 GB of disk and 2 GB of memory for the recommended model),
-- how to **enable** it (download, then tick the box), **disable** it (untick; the file is kept) or **delete** it (frees the disk space).
-
-The assistant needs the `llama-cpp-python` package, which is included in requirements.txt.
+| Compressor | Evens out loud and quiet speech | On |
+| Background noise reduction | Removes steady fan, hum or hiss. Helps in noisy rooms; can slightly reduce accuracy in quiet ones | Off |
+| Noise gate | Mutes the mic between words. Can clip very quiet words | Off |
 
 ---
 
-## Using other languages
+## Voice commands and keyboard shortcuts
 
-PyWriter's three language-dependent parts can each be switched separately.
-
-### 1. Speech recognition (what PyWriter hears)
-
-1. Download a Vosk model for your language from <https://alphacephei.com/vosk/models>. There are 20+ languages, including Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese and Hindi. The "small" models (40–50 MB) are a good start.
-2. Unzip it into the **models** folder, so you end up with e.g. `…/PyWriter/models/vosk-model-small-es-0.42/`.
-3. In **Settings ▸ Listening ▸ Speech model / language**, pick that folder. Every installed model appears in the list, so you can switch between languages.
-
-### 2. Reading voice (what PyWriter says)
-
-- **Windows voices:** in Windows **Settings ▸ Time & language ▸ Language & region**, add the language and include *Text-to-speech*, or use **Speech ▸ Add voices**. Restart PyWriter, and the new voices appear under the Windows engines.
-- **Piper voices:** browse <https://huggingface.co/rhasspy/piper-voices>. Download both files for a voice, the `.onnx` and the `.onnx.json` (e.g. `es/es_ES/davefx/medium/es_ES-davefx-medium.onnx` plus its `.json`). Put both in `…/PyWriter/models/piper/`, then choose the voice under **Engine: Natural neural voices**.
-- **macOS / Linux:** voices come from the system (AVSpeech on macOS; speech-dispatcher or espeak on Linux). Install voices there.
-
-### 3. Interview questions (what PyWriter asks)
-
-Questions live in plain YAML files in [`pywriter/packs/`](pywriter/packs/). To translate:
-
-1. Copy a pack, e.g. `10_character.yaml` → `10_character_es.yaml`.
-2. Change `pack:` to a new id (e.g. `character_es`). Translate `title`, `intro`, `outro`, `another`, every section `title`, and every question's `ask` and `label`, plus each option's `label`.
-3. **Don't change** `key:`, option `value:`, `type:`, `kind:`, `relation:` or the `when:` conditions. Those keep the database, links and branching working.
-4. Set `project_types:` so the translated pack is used. Make sure only one pack per kind is active for a project type, either by removing the English one from that type or by moving it out of the folder.
-5. Restart PyWriter. Any errors in a pack are shown at start-up and in **Tools ▸ Diagnostics**.
-
-> **Talk mode** understands English sentence patterns only. In other languages, use interviews; dictation and read-aloud work in any language with installed models and voices.
-
-### Name lists for spelling checks
-
-The bundled name lists are US-centric:
-
-- First names come from Social Security baby names.
-- Surnames come from Census surnames.
-
-For the official, larger first-name list, download <https://www.ssa.gov/oact/babynames/names.zip> in your browser, then use **Settings ▸ Import SSA names.zip…**. Lists for other countries can be dropped into the models folder as `names_first.tsv` / `names_last.tsv`. Each line holds a name, a tab, and a popularity number.
-
----
-
-## Voice commands
-
-**During interviews (Narration mode, F5)**
+**In interviews (narration mode, F5):**
 
 | Say | Does |
 |---|---|
-| "next question, confirm" (also *finished / continue / proceed* + *confirm / yes*) | Save and move on |
-| "next question" | Asks you to confirm first |
-| "go back" | Previous question |
+| "next question, confirm" (also *finished / done / continue / proceed / move on* + *confirm / yes*) | Save and go to the next question |
+| "next question" alone | Asks you to confirm first |
+| "go back" / "previous question" | Previous question |
 | "repeat the question" | Reads it again |
-| "read my answer" | Reads back what you've said |
+| "read my answer" / "what did I say" | Reads back your answer |
 | "skip question" | Skips it |
 | "scratch that" | Removes the last thing you said |
-| "stop listening" | Pauses |
-| "end interview" | Saves and finishes |
+| "stop listening" / "pause narration" | Pauses |
+| "end interview" / "save and close" | Saves and finishes |
 
-For choice questions, just say the option ("main character", "yes"). PyWriter confirms what it heard.
-
-**While dictating:** say "comma", "full stop", "question mark", "new line" or "new paragraph".
-
-**In Talk mode:**
-
-- "open Port Vell"
-- "tell me about Mara"
-- "interview Tomas"
-- "add a character named Elda"
-- "change Mara's age to 34"
-- "delete Tomas"
-- "undo"
+For choice questions, just say the option (*"main character"*, *"yes"*). PyWriter confirms what it heard.
 
 **Keyboard:**
 
-| Key | Does |
-|---|---|
-| Ctrl+Enter | Next question |
-| Alt+Left | Back |
-| F2 / F3 | Read question / answer |
-| F4 | Dictate |
-| F5 | Narration mode |
-| F11 | Distraction-free mode |
-| Ctrl+T | Talk mode |
-| Ctrl+G | Guided interview |
-| Ctrl+H | History |
+| Key | Does | | Key | Does |
+|---|---|---|---|---|
+| Ctrl+Enter | Next question | | Ctrl+G | Guided interview |
+| Alt+Left | Previous question | | Ctrl+T | Talk mode |
+| F2 | Read question aloud | | Ctrl+H | History and backups |
+| F3 | Read answer aloud | | Ctrl+O | New / open project |
+| F4 | Dictate | | Ctrl+, | Settings |
+| F5 | Narration mode | | Ctrl+Shift+Z | Undo last change |
+| F11 | Distraction-free mode | | Esc | Stop reading |
+| Ctrl+= / Ctrl+- | Larger / smaller text | | Ctrl+Q | Exit |
 
 ---
 
 ## How saving works
 
-- Every answer and edit is written to the project database immediately. There's no Save button to forget.
-- Every change is recorded with its old and new value in the database's change log. **Tools ▸ History** lets you revert any single change or restore deleted entries.
-- **Snapshots** are complete copies of the project in `backups/`. They're taken when you open or close a project, after each interview, and every few minutes while you work (only when something changed). Snapshots are never modified. By default all are kept; this is adjustable in Settings.
-- The **Story Bible** Markdown file is regenerated after changes, when you switch tabs, and when you close.
-- **File ▸ Import from PyWriter v10/v11** brings in projects from the old Tkinter version. Old answers are matched to the new questions where it's clear; anything uncertain is kept under "Imported from v11", so nothing is lost.
+Every project is a folder:
+
+```
+Documents/PyWriter Projects/<Title>/
+    <Title>.pwdb                    the project database (SQLite, one file)
+    <Title> - Story Bible.md        readable export, rewritten automatically
+    <Title> - Manuscript.md         manuscript export (once you have scenes)
+    <Title>_voice-transcript.txt    append-only record of what was heard and said
+    backups/                        timestamped full snapshots, never modified
+    audio/                          only if you turn on audio recording
+```
+
+- Every answer and edit goes into the database straight away, inside a transaction, so a crash or power cut can't leave a half-written file.
+- The database keeps a **change log** of every edit, with the old and new values. **Tools ▸ History** uses it to revert single changes.
+- **Snapshots** in `backups/` are complete project copies. All are kept by default. You can change this in **Settings ▸ Backups**.
+- To back up or move a project, copy its whole folder.
 
 ## Where things are stored
 
-| | |
+| What | Where |
 |---|---|
-| Projects | `Documents/PyWriter Projects/` (changeable when creating a project) |
-| Speech models, Piper voices, name lists | Windows `%APPDATA%\PyWriter\models\` · macOS `~/Library/Application Support/PyWriter/models/` · Linux `~/.local/share/PyWriter/models/` |
-| Settings | Qt settings (registry on Windows) |
-| Error log | `%APPDATA%\PyWriter\error.log` (same folder as models on other systems) |
+| Projects | `Documents/PyWriter Projects/` (you can choose another folder when creating a project) |
+| Speech models, Piper voices, AI models, name lists | Windows `%APPDATA%\PyWriter\models\` · macOS `~/Library/Application Support/PyWriter/models/` · Linux `~/.local/share/PyWriter/models/` |
+| Settings | Windows registry `HKEY_CURRENT_USER\Software\PyWriter` · macOS `~/Library/Preferences` · Linux `~/.config/PyWriter/` |
+| Error log | `error.log` in the same PyWriter user-data folder as the models |
 
 ---
 
-## Building a standalone app
+## Using other languages
+
+PyWriter has three language-dependent parts, and each can be switched separately.
+
+1. **Speech recognition:** download a Vosk model for your language from <https://alphacephei.com/vosk/models>. More than 20 languages are available. Unzip it into the **models** folder (e.g. `…/PyWriter/models/vosk-model-small-es-0.42/`), then pick it in **Settings ▸ Listening ▸ Speech model / language**.
+2. **Reading voice:** you have two options.
+   - Add a Windows voice for the language: **Settings ▸ Time & language ▸ Language & region**, and include *Text-to-speech*.
+   - Use a Piper voice. Download both its `.onnx` and `.onnx.json` files from <https://huggingface.co/rhasspy/piper-voices> into `…/PyWriter/models/piper/`.
+3. **Interview questions:** these are plain YAML files in [`pywriter/packs/`](pywriter/packs/).
+   1. Copy a pack (e.g. `10_character.yaml` → `10_character_es.yaml`) and give it a new `pack:` id.
+   2. Translate `title`, `intro`, `outro`, `another`, section titles, and each question's `ask`, `label` and option `label`.
+   3. **Don't change** `key`, option `value`, `type`, `kind`, `relation` or `when`. Those keep the database, links and branching working.
+   4. Make sure only one pack per kind is listed for a project type in `project_types:`.
+   5. Restart PyWriter. **Tools ▸ Diagnostics** shows any pack errors.
+
+Talk mode understands English sentence patterns only. Interviews, dictation and read-aloud work in any language you have models and voices for.
+
+The bundled name lists for spelling checks are US-based. You can import the larger official SSA list with **Settings ▸ Import SSA names.zip…**, or drop your own `names_first.tsv` / `names_last.tsv` files (name, tab, popularity) into the models folder.
+
+---
+
+## Downloads, privacy and training data
+
+**PyWriter never sends your writing anywhere.** The only network access is downloads you start yourself:
+
+| Download | Source | Where in the app |
+|---|---|---|
+| Speech recognition (Vosk) | [alphacephei.com/vosk/models](https://alphacephei.com/vosk/models) | Voice ▸ Download speech model… |
+| Natural voices (Piper) | [huggingface.co/rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) | Settings ▸ Reading voice ▸ Get natural voices… |
+| Optional AI assistant (Qwen2.5 1.5B / 0.5B, GGUF) | [Qwen2.5-1.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF) · [Qwen2.5-0.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF) | Tools ▸ Local AI assistant… |
+| Larger first-name list | [SSA names.zip](https://www.ssa.gov/oact/babynames/names.zip) (you download it; PyWriter imports the file) | Settings ▸ Import SSA names.zip… |
+
+Downloads show a progress bar, can be cancelled, and resume if interrupted. You can also put files in place by hand: Vosk folders and `piper/` voices go in the models folder, and AI models go in `models/llm/`.
+
+**About the optional AI assistant.** It's off unless you switch it on, and it runs entirely on your computer. It needs about 1 GB of disk and 2 GB of memory. It can't write: it may only return filing actions in a fixed format, and any value that isn't mostly your own words is replaced with your original sentence. **Tools ▸ Local AI assistant…** explains each model and lets you enable, disable or delete it.
+
+**Where the models' training data comes from.** PyWriter tries to rely on models trained on data that was paid for, licensed or volunteered:
+
+| Component | Training data |
+|---|---|
+| Piper voices *ljspeech*, *cori* | Public-domain LibriVox recordings by volunteer readers. Recommended. |
+| Piper voice *joe* | Voice donated under CC0. Recommended. |
+| Piper voices *lessac*, *ryan* | Licensed research recordings (non-commercial licences) |
+| Qwen2.5 models (optional assistant) | Large web-scraped corpus (Apache 2.0 weights). Clearly labelled and entirely optional. |
+| Vosk models | Alpha Cephei doesn't publish the training sources for the small English model |
+| Talk mode without the assistant | Built-in rules; no trained model at all |
+
+See [ROADMAP.md](ROADMAP.md) for plans to offer models trained only on consented data.
+
+---
+
+## Building the Windows app yourself
+
+From a source checkout, with the dependencies installed:
 
 ```bash
-python -m pip install pyinstaller
+python -m pip install -U pyinstaller pyinstaller-hooks-contrib
 python build.py
 ```
 
-This produces `dist/FoolsGoldPyWriter/`. On Windows the output is `FoolsGoldPyWriter.exe`. Build on each operating system you want to support.
+Use PyInstaller 6.10 or newer. Older versions build without complaint, but the app then fails at start-up with a NumPy 2 import error. Before sharing a build, always run `dist/FoolsGoldPyWriter/FoolsGoldPyWriter.exe` once.
+
+The output is `dist/FoolsGoldPyWriter/`, containing `FoolsGoldPyWriter.exe` plus its `_internal` folder. It's a folder build because that starts much faster than a single-file `.exe`.
+
+- Optional packages (Piper, llama-cpp, jellyfish…) are bundled only if they're installed when you build.
+- Large unrelated libraries (torch, scipy, pandas…) are excluded automatically.
+- PyInstaller doesn't cross-compile. To make a macOS or Linux build, run `build.py` on that system.
+
+---
 
 ## Project layout
 
 ```
-PyWriter/
-  main.py                  entry point
-  build.py                 PyInstaller build script
-  pywriter/
-    store.py               SQLite project database + change log
-    backup.py              rolling snapshots / restore
-    library.py             YAML question packs + condition language
-    engine.py              interview engine (branching, linking, stubs)
-    nlu.py                 Talk-mode interpreter (rule-based)
-    names.py               name spelling checks
-    voice.py               text-to-speech, speech-to-text, voice commands
-    export.py, importer.py, summary.py
-    packs/                 question packs (YAML) + guided flows
-    data/                  bundled name lists
-    resources/             icon, splash
-    ui/                    Qt windows
+main.py                  entry point
+build.py                 PyInstaller build script
+requirements.txt
+pywriter/
+  store.py               SQLite project database and change log
+  backup.py              snapshots and restore
+  library.py             YAML question packs and the condition language
+  engine.py              interview engine (branching, linking, stub entries)
+  nlu.py                 Talk-mode interpreter (rule-based)
+  llm.py                 optional local AI assistant
+  names.py               name spelling checks
+  voice.py, audio.py     read-aloud, speech recognition, devices, voice commands
+  export.py, importer.py, summary.py
+  packs/                 question packs (YAML) and guided-interview flows
+  data/                  bundled name lists
+  resources/             icon and splash screen
+  ui/                    Qt windows and panels
 ```
 
-## Where the models' training data comes from
+---
 
-PyWriter aims to rely on models trained on data that was paid for, licensed or volunteered. Here is what we know:
+## Reporting problems
 
-| Component | Training data | Notes |
-|---|---|---|
-| Piper voices *ljspeech*, *cori* | Public-domain LibriVox recordings by volunteer readers; trained from scratch | Recommended |
-| Piper voice *joe* | Voice donated under CC0, built on a CC0 base voice | Recommended |
-| Piper voices *lessac*, *ryan* | Licensed research recordings (non-commercial licences) | Consented recordings, but not for commercial use |
-| Other Piper voices | Openly licensed recordings, fine-tuned from one of the voices above | The model card for each voice is linked from the voice library |
-| Qwen2.5 language models (optional assistant) | Large web-scraped corpus (Apache 2.0 weights) | The only small model tested that does the filing task well. Clearly labelled, and entirely optional. |
-| Pleias language models | Common Corpus: public-domain and permissively licensed text only (Apache 2.0) | Tested (350M) but not offered: it's built for answering questions from documents and couldn't do the filing task. Without the optional assistant, Talk mode uses PyWriter's built-in rules, which involve no trained model at all. |
-| Vosk speech recognition models | Alpha Cephei doesn't publish the training sources for the small English model | Accuracy is reported on LibriSpeech and TED-LIUM test sets |
+Please [open an issue](https://github.com/sharxbyte/FoolsGold_Pywriter/issues) with:
 
-Fully consent-based speech-recognition training data exists: [Mozilla Common Voice](https://commonvoice.mozilla.org) (donated, CC0) and LibriSpeech (volunteer LibriVox readings). Small offline recognizers trained only on these exist in research and the k2/icefall project, but none ships in Vosk's format yet. See ROADMAP.md.
+- what you were doing, what you expected, and what happened instead;
+- your operating system, and whether you used the `.exe` or ran from source;
+- the contents of `error.log` (see [Where things are stored](#where-things-are-stored)) if there is one;
+- **Help ▸ About** and **Tools ▸ Diagnostics** output.
 
-## Where downloads come from
+Please don't attach project files that contain writing you want to keep private.
 
-PyWriter doesn't include any speech or AI models. When you choose one, the app downloads and installs it into your user data folder, with a progress bar, a cancel button, and resume if interrupted:
+---
 
-| Download | Source | Where it's offered in the app |
-|---|---|---|
-| Speech recognition (Vosk) | [alphacephei.com/vosk/models](https://alphacephei.com/vosk/models) | Voice ▸ Download speech model… |
-| Natural voices (Piper) | [huggingface.co/rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) | Settings ▸ Reading voice ▸ Get natural voices… |
-| Local AI assistant (Qwen2.5 1.5B / 0.5B, GGUF) | [Qwen2.5-1.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF) · [Qwen2.5-0.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF) | Tools ▸ Local AI assistant… (also offered once on first run) |
-| Name lists | Bundled; optional official [SSA names.zip](https://www.ssa.gov/oact/babynames/names.zip) | Settings ▸ Import SSA names.zip… |
-
-You can also place files by hand: Vosk model folders and `piper/` voices go in the models folder, and AI models go in `models/llm/`.
-
-## Credits and data sources
+## Credits
 
 - [Qt for Python (PySide6)](https://www.qt.io/qt-for-python): LGPL
 - [Vosk](https://alphacephei.com/vosk/) speech recognition: Apache 2.0
-- [Piper](https://github.com/rhasspy/piper) neural text-to-speech: MIT. Voices have individual licenses; see each voice's model card.
+- [Piper](https://github.com/rhasspy/piper) neural text-to-speech: MIT. Each voice has its own licence; see its model card.
+- [llama.cpp](https://github.com/ggerganov/llama.cpp) / [llama-cpp-python](https://github.com/abetlen/llama-cpp-python): MIT
+- [jellyfish](https://github.com/jamesturk/jellyfish) phonetic matching: MIT · [NetworkX](https://networkx.org/): BSD
 - First names: US Social Security Administration baby names (public domain), via [hadley/data-baby-names](https://github.com/hadley/data-baby-names)
 - Surnames: US Census Bureau 2000 surnames (public domain), via [FiveThirtyEight's data repository](https://github.com/fivethirtyeight/data/tree/master/most-common-name) (CC BY 4.0)
-- [jellyfish](https://github.com/jamesturk/jellyfish) (phonetic matching): MIT

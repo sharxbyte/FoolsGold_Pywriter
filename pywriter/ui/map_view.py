@@ -9,7 +9,7 @@ import random
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import (QCheckBox, QGraphicsItem, QGraphicsObject, QGraphicsPathItem, QGraphicsScene,
+from PySide6.QtWidgets import (QCheckBox, QGridLayout, QGraphicsItem, QGraphicsObject, QGraphicsPathItem, QGraphicsScene,
                                QGraphicsSimpleTextItem, QGraphicsView, QHBoxLayout, QLabel, QPushButton,
                                QVBoxLayout, QWidget)
 
@@ -111,15 +111,19 @@ class MapView(QWidget):
         h = QLabel("Map")
         h.setObjectName("h1")
         top.addWidget(h)
+        top.addStretch(1)
+        lay.addLayout(top)
+        top = QGridLayout()  # filter checkboxes wrap onto two rows so the map fits small screens
         self.filters: dict[str, QCheckBox] = {}
-        for kind in ("character", "location", "group", "item", "event", "plot", "theme", "topic", "source"):
+        for i, kind in enumerate(("character", "location", "group", "item", "event", "plot", "theme", "topic",
+                                  "source")):
             cb = QCheckBox(KINDS[kind][2])
             cb.setChecked(kind in ("character", "location", "group", "item"))
             cb.setStyleSheet(f"color: {KIND_COLORS[kind]}")
             cb.toggled.connect(self.rebuild)
             self.filters[kind] = cb
-            top.addWidget(cb)
-        top.addStretch(1)
+            top.addWidget(cb, i // 5, i % 5)
+        top.setColumnStretch(5, 1)
         lay.addLayout(top)
         btns = QHBoxLayout()
         auto = QPushButton("Auto-arrange")
@@ -134,8 +138,9 @@ class MapView(QWidget):
         btns.addWidget(self.show_labels)
         hint = QLabel("Drag to arrange · scroll to zoom · hover for summary · double-click to open")
         hint.setObjectName("muted")
-        btns.addStretch(1)
-        btns.addWidget(hint)
+        hint.setWordWrap(True)
+        hint.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        btns.addWidget(hint, 1)
         lay.addLayout(btns)
         self.scene = QGraphicsScene(self)
         self.view = QGraphicsView(self.scene)

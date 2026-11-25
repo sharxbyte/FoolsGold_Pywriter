@@ -196,7 +196,7 @@ class EntityPage(QWidget):
     # ---------------------------------------------------------------- data
     @property
     def entity(self):
-        return self.ctx.store.get(self.entity_id)
+        return self.ctx.store.get(self.entity_id) if self.ctx.store else None
 
     @property
     def pack(self):
@@ -222,6 +222,8 @@ class EntityPage(QWidget):
 
     # ---------------------------------------------------------------- refresh
     def refresh(self) -> None:
+        if not self.ctx.store:  # project closed while a refresh was queued
+            return
         e = self.entity
         if not e:
             return
