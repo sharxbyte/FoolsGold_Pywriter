@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from difflib import get_close_matches
 
 from .library import Pack, Question, evaluate, render
-from .store import KINDS, ProjectStore, split_list
+from .store import KINDS, RELATIONS, Link, ProjectStore, split_list
 
 
 @dataclass
@@ -38,6 +38,113 @@ def resolve_name(store: ProjectStore, name: str, kind: str | None) -> str | None
     return None
 
 
+# ------------------------------------------------------------------ relationships
+#
+# Relationship answers ("Who are her siblings?") are not stored as text. The links
+# between entries are the single source of truth, whether they were made in an
+# interview, in Talk mode, with "Add connection", or on the Edit tab. Each
+# relationship question shows the links that fit it, and saving an answer adds or
+# removes exactly those links, so every way of entering information stays in step.
+
+def ref_questions(pack: Pack) -> list[Question]:
+    return [q for q in pack.questions if q.type in ("entity", "entities") and q.key != "parent"]
+
+
+def _seen_relation(q: Question) -> str:
+    """The relation as read from the entry that owns the question."""
+    return RELATIONS.get(q.relation, q.relation) if q.reverse else q.relation
+
+
+def linked_refs(store: ProjectStore, pack: Pack, entity_id: str | None) -> dict[str, list[tuple[Link, str]]]:
+    """For each relationship question, the existing links (and the other entry) that answer it."""
+    qs = ref_questions(pack)
+    out: dict[str, list[tuple[Link, str]]] = {q.key: [] for q in qs}
+    if not qs or not entity_id:
+        return out
+    for link, other, seen in store.links_for(entity_id):
+        o = store.get(other, with_fields=False)
+        if not o:
+            continue
+        q = pack.question(link.via) if link.via else None
+        mine = q is not None and q in qs and (link.dst == entity_id if q.reverse else link.src == entity_id)
+        if not mine:
+            cands = [c for c in qs if _seen_relation(c) == seen and (c.kind or "character") == o.kind]
+            if len(cands) > 1:  # e.g. "participants" (a list) and "point of view" (one) both use "involves"
+                cands = [c for c in cands if c.type == "entities"] or cands
+            if len(cands) != 1:
+                continue  # ambiguous: it still shows under Connections
+            q = cands[0]
+        out[q.key].append((link, other))
+    for q in qs:
+        # links made by this very question first, then the oldest
+        out[q.key].sort(key=lambda lo: (lo[0].via != q.key, lo[0].id))
+        if q.type == "entity":
+            out[q.key] = out[q.key][:1]
+    return out
+
+
+def linked_answers(store: ProjectStore, pack: Pack, entity_id: str | None) -> dict[str, str]:
+    """Relationship answers as text ("Tomas Venn, Elda Rhee"), read from the links."""
+    out = {}
+    for key, items in linked_refs(store, pack, entity_id).items():
+        names = []
+        for _, other in items:
+            o = store.get(other, with_fields=False)
+            if o and o.name not in names:
+                names.append(o.name)
+        out[key] = ", ".join(names)
+    return out
+
+
+def effective_fields(store: ProjectStore, library, e) -> dict[str, str]:
+    """An entry's answers as everyone should see them, with relationship answers taken from links."""
+    fields = dict(e.fields)
+    if e.kind != "project":
+        pack = library.pack_for_kind(e.kind, store.project_type)
+        if pack:
+            fields.update(linked_answers(store, pack, e.id))
+    return fields
+
+
+def set_answer(store: ProjectStore, library, entity_id: str, key: str, value: str,
+               source: str = "edit") -> None:
+    """Save one answer from anywhere (Edit tab, Talk mode, the assistant). Relationship
+    answers become links exactly as they would in an interview."""
+    e = store.get(entity_id, with_fields=False)
+    if not e:
+        return
+    pack = library.pack_for_kind(e.kind, store.project_type) if e.kind != "project" else None
+    q = pack.question(key) if pack else None
+    if q and q.type in ("entity", "entities"):
+        iv = Interview(pack, store, entity_id)
+        iv.answers[key] = value
+        with store.batch():
+            res = CommitResult(entity_id)
+            iv._commit_refs(q, value, res, source)
+    else:
+        store.set_field(entity_id, key, value, source=source)
+
+
+def split_names(text: str, known: list[str]) -> list[str]:
+    """Split a list of names, keeping known names whole even when they contain
+    "and" or "&" ("Bread and Butter Inn")."""
+    import re
+    found: list[tuple[int, str]] = []
+    rest = text or ""
+    for name in sorted({n for n in known if n}, key=len, reverse=True):
+        pat = re.compile(rf"(?<!\w){re.escape(name)}(?!\w)", re.I)
+        m = pat.search(rest)
+        if m:
+            found.append((m.start(), name))
+            rest = rest[:m.start()] + "," + " " * (len(m.group(0)) - 1) + rest[m.end():]
+    found += [(text.find(p) if text else 0, p) for p in split_list(rest)]
+    out = []
+    for _, n in sorted(found):
+        if n.lower() not in (x.lower() for x in out):
+            out.append(n)
+    return out
+
+
 class Interview:
     def __init__(self, pack: Pack, store: ProjectStore, entity_id: str | None = None,
                  preset: dict[str, str] | None = None):
@@ -58,6 +165,7 @@ class Interview:
                 if e.parent_id:
                     parent = store.get(e.parent_id, with_fields=False)
                     self.answers["parent"] = parent.name if parent else ""
+                self.answers.update(linked_answers(store, pack, self.entity_id))
         if preset:
             self.answers.update({k: v for k, v in preset.items() if v and not self.answers.get(k)})
         self.current: Question | None = None
@@ -136,6 +244,9 @@ class Interview:
         if e.parent_id and not self.answers.get("parent"):
             parent = self.store.get(e.parent_id, with_fields=False)
             self.answers["parent"] = parent.name if parent else ""
+        for k, v in linked_answers(self.store, self.pack, e.id).items():
+            if v and not self.answers.get(k):
+                self.answers[k] = v
         self.adopted = e.id
         return e.id
 
@@ -192,8 +303,7 @@ class Interview:
                 val = self.answers[q.key]
                 if q.type in ("entity", "entities"):
                     self._commit_refs(q, val, res, source)
-                    if q.key == "parent":
-                        continue
+                    continue  # relationships live in links (see linked_refs), not text
                 if q.key == "name" and not val.strip():
                     continue
                 plain[q.key] = val
@@ -209,10 +319,20 @@ class Interview:
     def _commit_refs(self, q: Question, value: str, res: CommitResult, source: str) -> None:
         store = self.store
         kind = q.kind or "character"
-        names = split_list(value) if q.type == "entities" else ([value.strip()] if value.strip() else [])
+        current = [] if q.key == "parent" else linked_refs(store, self.pack, self.entity_id).get(q.key, [])
+        by_name = {}
+        for _, other in current:
+            o = store.get(other, with_fields=False)
+            if o:
+                by_name.setdefault(o.name.lower(), other)
+        if q.type == "entities":
+            names = split_names(value, [n for _, k, n in store.all_names() if k == kind] +
+                                [store.get(o, with_fields=False).name for _, o in current])
+        else:
+            names = [value.strip()] if value.strip() else []
         ids = []
         for n in names:
-            eid = resolve_name(store, n, kind)
+            eid = by_name.get(n.strip().lower()) or resolve_name(store, n, kind)
             if not eid:
                 me = store.get(self.entity_id, with_fields=False)
                 eid = store.create_entity(kind, n, source=source)
@@ -223,5 +343,13 @@ class Interview:
         if q.key == "parent":
             store.set_field(self.entity_id, "parent", ids[0] if ids else "", source=source)
             return
-        store.sync_links(self.entity_id, via=q.key, relation=q.relation, targets=ids,
-                         source=source, reverse=q.reverse)
+        # remove links this answer no longer lists (wherever they were made), add the new ones
+        for link, other in current:
+            if other not in ids:
+                store.unlink(link.src, link.dst, link.relation, source=source)
+        have = {other for _, other in current}
+        for t in ids:
+            if t in have or t == self.entity_id:
+                continue
+            a, b = (t, self.entity_id) if q.reverse else (self.entity_id, t)
+            store.link(a, b, q.relation, via=q.key, source=source)

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "installer" for the Inno Setup installer.
+  Paste into the SignPath project's artifact configuration with the slug "installer".
+  The GitHub artifact is a ZIP containing the single setup .exe; the program inside
+  it was already signed by the "app-folder" configuration before it was packed.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="FoolsGoldPyWriter-*-setup.exe"
+             product-name="FoolsGold PyWriter"
+             product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

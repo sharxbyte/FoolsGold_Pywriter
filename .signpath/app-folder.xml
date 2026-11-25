@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "app-folder" for the Nuitka folder build.
+  SignPath keeps artifact configurations on its server: paste this into the
+  project's artifact configuration with the slug "app-folder". This copy is kept in
+  the repository so the signing setup is reviewable.
+
+  The GitHub artifact is a ZIP of dist/FoolsGoldPyWriter/ with the files at its root.
+  Only PyWriter's own program is signed ("sign your own binaries only"). The Qt,
+  NumPy, onnxruntime and other third-party DLLs keep their publishers' signatures.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="FoolsGoldPyWriter.exe"
+             product-name="FoolsGold PyWriter"
+             product-version="${version}"
+             file-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

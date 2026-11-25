@@ -36,6 +36,33 @@ try:
 except Exception:  # pragma: no cover
     sd = None  # type: ignore
 
+# Only one utterance plays at a time. Each playback owns its own output stream: the
+# sounddevice convenience calls (sd.play / sd.stop) share one global stream, and
+# touching it from two threads at once crashes PortAudio.
+_AUDIO_LOCK = threading.Lock()
+
+
+def play_blocking(audio, rate: int, device, stop: threading.Event) -> bool:
+    """Play int16 audio on the given device until done or ``stop`` is set.
+    Returns False if it was stopped. Runs on a worker thread."""
+    import numpy as np
+    data = np.asarray(audio, dtype=np.int16)
+    if data.ndim == 1:
+        data = data.reshape(-1, 1)
+    block = max(256, int(rate) // 20)      # ~50 ms, so stopping is prompt
+    with _AUDIO_LOCK:
+        if stop.is_set():
+            return False
+        with sd.OutputStream(samplerate=int(rate), channels=data.shape[1], dtype="int16",
+                             device=device) as out:
+            for pos in range(0, len(data), block):
+                if stop.is_set():
+                    out.abort()
+                    return False
+                out.write(data[pos:pos + block])
+    return True
+
+
 DEFAULT_MODEL = "vosk-model-small-en-us-0.15"
 LARGE_MODEL = "vosk-model-en-us-0.22-lgraph"
 MODELS = {
@@ -283,11 +310,8 @@ class Speaker(QObject):
                 rate = chunk.sample_rate
                 if self.pitch:  # simple pitch shift by resampling playback rate
                     rate = int(rate * (1.0 + 0.25 * self.pitch))
-                sd.play(np.asarray(audio), rate, device=self.output_device)
-                while sd.get_stream().active:
-                    if stop.wait(0.05):
-                        sd.stop()
-                        return
+                if not play_blocking(audio, rate, self.output_device, stop):
+                    return
         self._run_thread(work, text)
 
     def _say_sapi_routed(self, text: str) -> None:
@@ -321,11 +345,7 @@ class Speaker(QObject):
                     audio = audio.reshape(-1, ch)
                 if stop.is_set():
                     return
-                sd.play(audio, int(sr * (1.0 + 0.25 * self.pitch)), device=self.output_device)
-                while sd.get_stream().active:
-                    if stop.wait(0.05):
-                        sd.stop()
-                        return
+                play_blocking(audio, int(sr * (1.0 + 0.25 * self.pitch)), self.output_device, stop)
             finally:
                 try:
                     os.unlink(path)
@@ -336,12 +356,7 @@ class Speaker(QObject):
     def stop(self) -> None:
         if self._tts is not None:
             self._tts.stop()
-        self._stop_flag.set()
-        if (self.engine == "piper" or self.output_device is not None) and sd is not None:
-            try:
-                sd.stop()
-            except Exception:
-                pass
+        self._stop_flag.set()   # the playing thread stops its own stream within ~50 ms
 
 
 class PiperDownloader(QThread):

@@ -2,6 +2,8 @@
 library, voice engines, settings and a change-notification bus."""
 from __future__ import annotations
 
+import os
+
 import datetime as _dt
 from pathlib import Path
 
@@ -57,7 +59,9 @@ class VoiceTranscript:
 
 class AppContext:
     def __init__(self):
-        self.settings = QSettings(APP_NAME, APP_NAME)
+        # PYWRITER_SETTINGS=<file.ini> keeps settings in a file instead (testing, portable installs)
+        ini = os.environ.get("PYWRITER_SETTINGS")
+        self.settings = QSettings(ini, QSettings.IniFormat) if ini else QSettings(APP_NAME, APP_NAME)
         self.library = Library()
         self.bus = Bus()
         self.speaker = Speaker()

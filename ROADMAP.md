@@ -70,7 +70,7 @@ Offline and local. No AI text generation; speech and language tools only *interp
 - [x] Distraction-free (full screen) mode
 
 ### Block 8 – Packaging and next steps
-- [x] PyInstaller build script, README
+- [x] Build script, README
 - [x] Optional: local language model plugin (llama.cpp) for richer conversation
 - [x] Optional: import from the v11 JSON projects
 
@@ -80,6 +80,12 @@ Offline and local. No AI text generation; speech and language tools only *interp
 - [x] Speech model picker (any installed Vosk language model) and README instructions for other languages
 - [x] Optional larger, more accurate English speech model
 - [x] Import of the official SSA names.zip for a larger first-name list
+
+### 1.1
+- [x] Talk mode and interviews fully interchangeable: relationships are stored once, as links, and shown in every view
+- [x] File ▸ Export: complete backup zip, Word (.docx), spreadsheets (.csv) and lossless JSON
+- [x] GPL-3.0-or-later license with plain-language terms of use
+- [x] Nuitka folder build, headless `--selftest`, Inno Setup installer, GitHub Actions release workflow with SignPath signing
 
 ### Ideas for later
 - [x] Optional local language model (llama.cpp) for richer Talk-mode understanding: extraction only, never writing; offered on first run; download, enable, disable and delete from Tools ▸ Local AI assistant

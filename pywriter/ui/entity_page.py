@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QCompleter, QDialog, QDialo
                                QMessageBox, QPlainTextEdit, QPushButton, QScrollArea, QSplitter, QTabWidget,
                                QVBoxLayout, QWidget, QInputDialog)
 
-from ..engine import Interview
+from ..engine import effective_fields, set_answer
 from ..library import LEVEL_LABELS, evaluate
 from ..store import KINDS, RELATIONS, TIER_LABELS
 from ..summary import spoken_summary, subtitle
@@ -196,7 +196,10 @@ class EntityPage(QWidget):
     # ---------------------------------------------------------------- data
     @property
     def entity(self):
-        return self.ctx.store.get(self.entity_id) if self.ctx.store else None
+        e = self.ctx.store.get(self.entity_id) if self.ctx.store else None
+        if e:  # relationship answers come from links, so every view agrees with Talk and the map
+            e.fields = effective_fields(self.ctx.store, self.ctx.library, e)
+        return e
 
     @property
     def pack(self):
@@ -506,20 +509,10 @@ class EntityPage(QWidget):
         e = self.entity
         if not e:
             return
-        pack = self.pack
-        q = pack.question(key) if pack else None
-        if not q:
-            for p in self._packs():
-                q = p.question(key)
-                if q:
-                    pack = p
-                    break
-        if q and q.type in ("entity", "entities") and pack:
-            iv = Interview(pack, self.ctx.store, self.entity_id)
-            iv.answers[key] = value
-            iv.commit(source="edit")
-        else:
+        if key in ("name", "tier", "parent"):
             self.ctx.store.set_field(self.entity_id, key, value, source="edit")
+        else:
+            set_answer(self.ctx.store, self.ctx.library, self.entity_id, key, value, source="edit")
 
     def _sync_form_values(self, e) -> None:
         """Update editors from the database without clobbering what's being typed."""

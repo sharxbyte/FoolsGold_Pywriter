@@ -28,6 +28,10 @@ def _excepthook(etype, value, tb):
 
 def main(argv: list[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv
+    for a in argv[1:]:
+        if a == "--selftest" or a.startswith("--selftest="):
+            from .selftest import run
+            return run(a.split("=", 1)[1] if "=" in a else None)
     sys.excepthook = _excepthook
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication(argv)

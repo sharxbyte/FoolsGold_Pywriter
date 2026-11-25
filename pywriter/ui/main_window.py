@@ -157,8 +157,16 @@ class MainWindow(QMainWindow):
         mb = self.menuBar()
         fm = mb.addMenu("&File")
         fm.addAction("New / Open project…", self.switch_project, QKeySequence("Ctrl+O"))
-        fm.addAction("Export Story Bible (Markdown)", lambda: self._export(True))
-        fm.addAction("Export Manuscript (Markdown)", lambda: self._export(False))
+        em = fm.addMenu("Export")
+        em.addAction("Complete backup (.zip)…", lambda: self._export_as("backup"))
+        em.addSeparator()
+        em.addAction("Story Bible as Word (.docx)…", lambda: self._export_as("bible_docx"))
+        em.addAction("Manuscript as Word (.docx)…", lambda: self._export_as("manuscript_docx"))
+        em.addAction("Spreadsheets (.csv)…", lambda: self._export_as("csv"))
+        em.addAction("Whole project as JSON…", lambda: self._export_as("json"))
+        em.addSeparator()
+        em.addAction("Story Bible as Markdown (project folder)", lambda: self._export(True))
+        em.addAction("Manuscript as Markdown (project folder)", lambda: self._export(False))
         fm.addAction("Open project folder", lambda: open_folder(self.ctx.store.folder))
         fm.addAction("Import from PyWriter v10/v11 (.json)…", self.import_old)
         fm.addSeparator()
@@ -356,6 +364,59 @@ class MainWindow(QMainWindow):
         p = export_story_bible(self.ctx.store, self.ctx.library) if bible else export_manuscript(self.ctx.store)
         self.statusBar().showMessage(f"Exported {p}", 8000)
         open_folder(p.parent)
+
+    def _export_as(self, what: str) -> None:
+        """Export to a place the writer chooses, e.g. for backups kept outside PyWriter."""
+        import datetime as _dt
+        from pathlib import Path
+        from PySide6.QtWidgets import QFileDialog
+        from .. import exporters as ex
+        s = self.ctx.store
+        if what == "manuscript_docx" and not s.entities("scene"):
+            QMessageBox.information(self, "Export", "There are no manuscript scenes to export yet.")
+            return
+        self._save_on_switch()
+        start_dir = Path(self.ctx.get("export/last_dir", "") or (Path.home() / "Documents"))
+        title = ex.safe_filename(s.title)
+        stamp = f"{_dt.datetime.now():%Y-%m-%d %H%M}"
+        if what == "csv":
+            folder = QFileDialog.getExistingDirectory(self, "Choose where to put the spreadsheets", str(start_dir))
+            if not folder:
+                return
+            target = Path(folder) / f"{title} - spreadsheets {stamp}"
+        else:
+            name, filt = {
+                "backup": (f"{title} - PyWriter backup {stamp}.zip", "Zip archive (*.zip)"),
+                "bible_docx": (f"{title} - Story Bible.docx", "Word document (*.docx)"),
+                "manuscript_docx": (f"{title} - Manuscript.docx", "Word document (*.docx)"),
+                "json": (f"{title} - project {stamp}.json", "JSON (*.json)"),
+            }[what]
+            f, _ = QFileDialog.getSaveFileName(self, "Export", str(start_dir / name), filt)
+            if not f:
+                return
+            target = Path(f)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            if what == "backup":
+                out = ex.export_backup_zip(s, self.ctx.library, target)
+            elif what == "bible_docx":
+                out = ex.export_story_bible_docx(s, self.ctx.library, target)
+            elif what == "manuscript_docx":
+                out = ex.export_manuscript_docx(s, target)
+            elif what == "json":
+                out = ex.export_json(s, target)
+            else:
+                ex.export_csv(s, self.ctx.library, target)
+                out = target
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.warning(self, "Export failed", f"Couldn't export:\n\n{e}")
+            return
+        QApplication.restoreOverrideCursor()
+        self.ctx.set("export/last_dir", str(target.parent))
+        self.statusBar().showMessage(f"Exported {out}", 10000)
+        if QMessageBox.question(self, "Exported", f"Saved:\n{out}\n\nOpen the folder?") == QMessageBox.Yes:
+            open_folder(out if out.is_dir() else out.parent)
 
     def _entity_changed(self, eid: str) -> None:
         self._export_timer.start()
@@ -621,7 +682,12 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, APP_DISPLAY_NAME, f"<b>{APP_DISPLAY_NAME}</b> {APP_VERSION}<br>"
                           "An offline, voice-friendly interviewer and story bible for writers.<br><br>"
                           "Everything stays on your computer. No AI text generation — "
-                          "PyWriter asks, listens and organizes; the writing is yours.")
+                          "PyWriter asks, listens and organizes; the writing is yours.<br><br>"
+                          "<small>Copyright © 2023-2026 sharxbyte. Free software under the GNU GPL v3 or "
+                          "later, with no warranty: see TERMS-OF-USE.md and LICENSE in the program folder. "
+                          "Anything you write with PyWriter is yours to publish and sell.<br>"
+                          "<a href='https://github.com/sharxbyte/FoolsGold_Pywriter'>"
+                          "github.com/sharxbyte/FoolsGold_Pywriter</a></small>")
 
     def closeEvent(self, e) -> None:
         self.ctx.set("ui/talk_visible", self.talk_dock.isVisible())

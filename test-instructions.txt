@@ -26,20 +26,34 @@ Tips before you start
 
 0. INSTALL AND FIRST START
 --------------------------
-0.1  Windows .exe: unzip the release, run FoolsGoldPyWriter.exe.
-     - If SmartScreen appears, "More info > Run anyway" works.
-     - The splash screen shows, then the "new project" window appears.
+0.1  Windows: run FoolsGoldPyWriter-<version>-setup.exe.
+     - If SmartScreen appears on an unsigned build, "More info > Run anyway" works.
+       On a signed build, check that Properties > Digital Signatures shows the
+       signature on both the installer and the installed FoolsGoldPyWriter.exe.
+     - The license / terms of use page appears and must be accepted.
+     - It installs without an administrator prompt (per-user install).
+     - The Start menu has FoolsGold PyWriter, Read me, License and terms of use,
+       and Uninstall. The desktop icon is only created if you ticked it.
+     - "Launch FoolsGold PyWriter" at the end starts the app: the splash screen
+       shows, then the "new project" window appears.
 0.2  From source: follow README "Run from source". `python main.py` starts.
 0.3  The window is centered on the screen and about half the screen's size.
      (On screens narrower than about 1300 px it will be wider than half - note your
      screen resolution if it ever goes off-screen.)
+0.4  Help > About shows the version, the GPL / terms-of-use line and the link.
 Edge cases
-0.4  Run the .exe from a folder whose path has spaces and non-English letters
-     (e.g. "C:\Users\you\Desktop\Tést Folder\"). It should still start.
-0.5  Move the .exe out of its folder on its own (without _internal). It should
-     fail to start - that's expected; the README says to keep the folder together.
-0.6  Start it a second time while it's already open. Note what happens. Two
+0.5  Install with "Install for all users" (asks for admin) instead of per user.
+0.6  Install a newer version over an older one: it upgrades in place, and your
+     projects and settings are untouched.
+0.7  Uninstall from Settings > Apps: the program folder and Start menu entries are
+     removed; Documents\PyWriter Projects and %APPDATA%\PyWriter are NOT.
+0.8  Install to a folder whose path has spaces and non-English letters
+     (e.g. "C:\Users\you\Tést Programs\PyWriter"). It should still start.
+0.9  Start it a second time while it's already open. Note what happens. Two
      windows on the same project are not supported - don't edit in both.
+0.10 Self-test: from a Command Prompt in the install folder run
+       FoolsGoldPyWriter.exe --selftest=%TEMP%\pywriter-selftest.json
+     No window opens; the JSON file lists every check and "ok": true.
 
 
 1. CREATING AND OPENING PROJECTS
@@ -187,6 +201,39 @@ Edge cases
      ("My grandmother was born in Cork in 1931").
 
 
+5B. TALK MODE + INTERVIEWS + EDIT TAB TOGETHER
+-----------------------------------------------
+Talk, interviews, the Edit tab and "Add connection" are all supposed to work on the
+same entries interchangeably. Mix them freely - nothing should be lost, duplicated
+or out of step.
+5B.1 Talk first: in Talk, create Mara (main character), give her red hair and green
+     eyes, say she lives in Port Vell and that Tomas is her brother. Then open Mara
+     and click Re-interview: hair, eyes, home (Port Vell) and siblings (Tomas)
+     are already filled in. Finish the interview: still one Mara, one Tomas, one
+     Port Vell.
+5B.2 Tomas's interview shows Mara as his sibling. Port Vell's interview lists Mara
+     as a resident (Fiction).
+5B.3 Interview first: create a character by interview with a sibling and a home.
+     Then in Talk: "<name> has a scar", "<name>'s father is Vorn". Re-interview:
+     the scar is under features, Vorn is under parents. No duplicates.
+5B.4 Half and half: start a character interview, answer 3 questions, close it.
+     Add details in Talk. Re-interview: both sets of answers are there.
+5B.5 Removal from any side: remove a sibling on the Edit tab -> gone from Talk's
+     "tell me about", the map, the other person's page and the interview.
+     Then do the reverse with "Remove link" on the page.
+5B.6 "Add connection" (e.g. Mara - ally - Kell) -> it shows in Mara's "allies"
+     interview answer.
+5B.7 Delete an entry in Talk ("delete Tomas", "yes"), re-interview Mara and finish:
+     Tomas does NOT come back. "undo" brings him back with the link.
+5B.8 Names containing "and" ("the Knights and Ladies of Vell"): join one in Talk,
+     re-interview, finish -> still one group, no "Knights" or "Ladies" entries.
+5B.9 Biography / Non-Fiction: Talk asks "a person, a place, a group, an event..."
+     (no items or plot threads), and "add an item named Lantern" explains that
+     this project type has no items.
+5B.10 "The Tavern is a building" -> place called Tavern; "the tavern is noisy"
+     later adds to the same place.
+
+
 6. VOICE (needs a microphone and speakers/headset)
 --------------------------------------------------
 Setup
@@ -259,7 +306,19 @@ Edge cases
      so restoring that newer snapshot brings you back. Test both directions.
 8.6  Tools > Undo last change (Ctrl+Shift+Z).
 8.7  Tools > Back up now: a new snapshot appears.
-8.8  File > Export Story Bible / Manuscript: files open in the folder.
+8.8  File > Export > each option, saving outside the project folder (e.g. Desktop or
+     a USB stick):
+     - Complete backup (.zip): unzip it; "READ ME.txt" explains the contents; open
+       the .pwdb inside with File > New / Open project - everything is there.
+     - Story Bible as Word: opens in Word / LibreOffice; every entry, answer,
+       connection (including ones added in Talk) and note is present.
+     - Manuscript as Word: scenes in order, paragraphs kept.
+     - Spreadsheets: open Characters.csv in Excel - one row per character, one
+       column per question; accents, quotes, commas and line breaks display correctly.
+     - JSON: opens in a text editor / browser.
+     - Markdown options rewrite the files in the project folder.
+8.8b Export with a project title containing accents or symbols ("Él Niño & Co"), and
+     export a brand-new empty project. Neither should error.
 Edge cases
 8.9  Open the Story Bible .md in Word or Notepad (keeping it open) while you
      keep editing in PyWriter. PyWriter must not crash; report any error.
@@ -284,13 +343,17 @@ Edge cases
 9.5  Windows display scaling 100%, 150%, 200%: nothing cut off.
 9.6  Small screen (1366x768 laptop): the main window and interview window fit
      on screen, with nothing off the edge.
-9.7  Tools > Diagnostics and Help > About open and show sensible info (version 1.0.0).
+9.7  Tools > Diagnostics and Help > About open and show sensible info (the version matches the release you downloaded, and
+     About mentions the license).
 
 
 10. OPTIONAL LOCAL AI ASSISTANT
 -------------------------------
 10.1 Tools > Local AI assistant: the explanation, sizes and training-data notes
-     are clear.
+     are clear. With a downloaded model and "Use the local AI assistant" ticked, the
+     bottom button reads "Use <model> and continue"; unticked, it reads "Close" (or
+     "Continue without the assistant" on first run). Pick the other downloaded
+     model: the button and the status line switch to it straight away.
 10.2 Download the recommended model, enable it, and repeat Talk tests 5.1-5.5
      plus freer phrasing ("So basically Mara's got this older brother, Tomas,
      who's always bailing her out"). It should file facts and never invent text

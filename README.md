@@ -25,21 +25,24 @@ PyWriter asks you about your project one question at a time: your characters, pl
 - [Building the Windows app yourself](#building-the-windows-app-yourself)
 - [Project layout](#project-layout)
 - [Reporting problems](#reporting-problems)
+- [License](#license)
+- [Code signing policy](#code-signing-policy)
 - [Credits](#credits)
 
 ---
 
 ## Download and run (Windows)
 
-1. Go to the [Releases page](https://github.com/sharxbyte/FoolsGold_Pywriter/releases) and download `FoolsGoldPyWriter-<version>-windows-x64.zip`.
-2. Unzip it anywhere, e.g. `Documents\FoolsGoldPyWriter\`. **Keep the folder together:** the `.exe` needs the `_internal` folder next to it.
-3. Double-click **`FoolsGoldPyWriter.exe`**.
+1. Go to the [Releases page](https://github.com/sharxbyte/FoolsGold_Pywriter/releases) and download **`FoolsGoldPyWriter-<version>-setup.exe`**.
+2. Run it. The installer shows the [license and terms of use](TERMS-OF-USE.md), then installs PyWriter for your Windows account. No administrator rights are needed. There's also an option to install for all users.
+3. Start **FoolsGold PyWriter** from the Start menu (or the optional desktop icon).
 
-**Windows SmartScreen:** the app isn't code-signed yet, so Windows may show *"Windows protected your PC"*. Click **More info ▸ Run anyway**. You only need to do this once.
+**Windows SmartScreen:** until releases are code-signed (see [Code signing policy](#code-signing-policy)), Windows may show *"Windows protected your PC"*. Click **More info ▸ Run anyway**. You only need to do this once per version.
 
 The download has no speech or AI models in it, so it stays small. PyWriter offers to download them from inside the app when you want them (see [Voice setup](#voice-setup)).
 
-To update, unzip the new version over the old folder, or into a new folder. Your projects and settings are stored elsewhere and aren't touched.
+**Updating:** run the new installer. It replaces the old version.
+**Uninstalling:** use *Settings ▸ Apps*, or *Uninstall FoolsGold PyWriter* in the Start menu. Your projects (`Documents\PyWriter Projects`) and downloaded models (`%APPDATA%\PyWriter`) are never deleted by the uninstaller.
 
 ---
 
@@ -183,7 +186,7 @@ Categories=Office;
 
 ### Talk mode (Ctrl+T)
 
-Describe your story in plain sentences, typed or spoken. PyWriter pulls out facts (appearance, age, occupation…) and relationships (sibling of, lives in, works for, member of…). If it meets a name it doesn't know, it asks whether that's a character, place, group, item or event. Anything it can't file is kept as a note, so nothing you say is lost.
+Describe your story in plain sentences, typed or spoken. Talk mode and the interviews are interchangeable: start an entry in one and finish it in the other, in any order. Relationships are stored as links between entries, so a sibling mentioned in Talk appears in the character's interview, and removing it in either place removes it everywhere. PyWriter pulls out facts (appearance, age, occupation…) and relationships (sibling of, lives in, works for, member of…). If it meets a name it doesn't know, it asks whether that's a character, place, group, item or event. Anything it can't file is kept as a note, so nothing you say is lost.
 
 You can also give it commands: *open Port Vell · tell me about Mara · interview Tomas · add a character named Elda · change Mara's age to 34 · delete Tomas · undo*.
 
@@ -208,7 +211,12 @@ Talk mode uses built-in language rules. An **optional** small AI model that runs
 - **Autosave:** there's no Save button. Changes are saved as you type, when you finish an interview, when you switch tabs, and when you close the window.
 - **History** (Ctrl+H): every change is kept with its old and new value. You can revert any single change or bring back deleted entries.
 - **Snapshots:** complete copies of the project are taken on open, on close, after each interview, and every 5 minutes while you work. Snapshots are never edited afterwards. Restoring one takes a snapshot of the current state first, so a restore can be undone too.
-- **Story Bible export:** `<Title> - Story Bible.md` is a plain-text Markdown copy of everything. It's rewritten automatically and can be opened in any editor.
+- **Story Bible file:** `<Title> - Story Bible.md` is a plain-text Markdown copy of everything. It's rewritten automatically in the project folder and opens in any editor.
+- **Export** (**File ▸ Export**), saved anywhere you choose, for backups outside PyWriter or for use in other programs:
+  - **Complete backup (.zip):** everything below in one archive, plus a copy of the project database that PyWriter can open again;
+  - **Word (.docx):** the Story Bible and the Manuscript as formatted documents;
+  - **Spreadsheets (.csv):** one sheet per kind of entry (a row per entry, a column per question), plus connections, notes and scenes. Opens in Excel, LibreOffice Calc, Numbers or Google Sheets;
+  - **JSON:** the whole project (every entry, answer, link, note, conversation and change) in an open, lossless format.
 - **Import:** **File ▸ Import from PyWriter v10/v11** brings in projects from the old Tkinter version. Anything that doesn't match a new question cleanly is kept under "Imported from v11".
 
 ### Accessibility
@@ -308,7 +316,7 @@ Documents/PyWriter Projects/<Title>/
 - Every answer and edit goes into the database straight away, inside a transaction, so a crash or power cut can't leave a half-written file.
 - The database keeps a **change log** of every edit, with the old and new values. **Tools ▸ History** uses it to revert single changes.
 - **Snapshots** in `backups/` are complete project copies. All are kept by default. You can change this in **Settings ▸ Backups**.
-- To back up or move a project, copy its whole folder.
+- To back up or move a project, copy its whole folder, or use **File ▸ Export ▸ Complete backup (.zip)**. To restore from a backup zip, unzip it and open the `.pwdb` file inside with **File ▸ New / Open project**.
 
 ## Where things are stored
 
@@ -374,20 +382,30 @@ See [ROADMAP.md](ROADMAP.md) for plans to offer models trained only on consented
 
 ## Building the Windows app yourself
 
-From a source checkout, with the dependencies installed:
+PyWriter is compiled with [Nuitka](https://nuitka.net) into a folder build (`--standalone`, never one-file), which [Inno Setup](https://jrsoftware.org/isinfo.php) packs into an installer.
 
-```bash
-python -m pip install -U pyinstaller pyinstaller-hooks-contrib
-python build.py
+**You need:**
+- Python 3.11 with the requirements installed;
+- a C compiler: Visual Studio or the *Build Tools for Visual Studio* with **Desktop development with C++** (if none is found, Nuitka offers to download MinGW64);
+- [Inno Setup 6](https://jrsoftware.org/isinfo.php) for the installer (`winget install JRSoftware.InnoSetup`).
+
+Build from a **clean virtual environment** that holds only PyWriter's requirements. Nuitka compiles every importable package it can reach, so building from a shared Python install with other projects' libraries can drag in hundreds of megabytes the app never uses.
+
+```bat
+py -3.11 -m venv .venv-build
+.venv-build\Scripts\python -m pip install -r requirements.txt -r requirements-build.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+.venv-build\Scripts\python build.py               :: compiles to dist\FoolsGoldPyWriter\ and runs its self-test
+.venv-build\Scripts\python build.py --installer   :: ...and also builds dist\FoolsGoldPyWriter-<version>-setup.exe
 ```
 
-Use PyInstaller 6.10 or newer. Older versions build without complaint, but the app then fails at start-up with a NumPy 2 import error. Before sharing a build, always run `dist/FoolsGoldPyWriter/FoolsGoldPyWriter.exe` once.
+If the build fails with *"Failed to add resources to file … error code 22"*, the program came out too large (see above). If it still fails in a clean environment, add a Windows Security exclusion for the `dist` folder.
 
-The output is `dist/FoolsGoldPyWriter/`, containing `FoolsGoldPyWriter.exe` plus its `_internal` folder. It's a folder build because that starts much faster than a single-file `.exe`.
+The first build takes a long time (often 20–60 minutes). Later builds reuse Nuitka's cache.
 
-- Optional packages (Piper, llama-cpp, jellyfish…) are bundled only if they're installed when you build.
-- Large unrelated libraries (torch, scipy, pandas…) are excluded automatically.
-- PyInstaller doesn't cross-compile. To make a macOS or Linux build, run `build.py` on that system.
+- Every build runs `FoolsGoldPyWriter.exe --selftest` automatically. This checks the bundled data and every library inside the compiled program, and runs a small project through the interview engine, Talk mode and the main window without opening any windows. A failed self-test fails the build.
+- Optional packages (Piper, llama-cpp, jellyfish…) are included only if they're installed when you build. Large unrelated libraries (torch, scipy, pandas…) are left out.
+- Nuitka doesn't cross-compile. For macOS or Linux builds, run `python build.py` on that system (the installer step is Windows-only).
+- Official releases are built by GitHub Actions (`.github/workflows/release.yml`) from a version tag, so every release binary can be traced to its source.
 
 ---
 
@@ -395,7 +413,9 @@ The output is `dist/FoolsGoldPyWriter/`, containing `FoolsGoldPyWriter.exe` plus
 
 ```
 main.py                  entry point
-build.py                 PyInstaller build script
+build.py                 Nuitka build, self-test and installer
+installer/               Inno Setup script for the Windows installer
+.github/workflows/       release build and code signing
 requirements.txt
 pywriter/
   store.py               SQLite project database and change log
@@ -425,6 +445,37 @@ Please [open an issue](https://github.com/sharxbyte/FoolsGold_Pywriter/issues) w
 - **Help ▸ About** and **Tools ▸ Diagnostics** output.
 
 Please don't attach project files that contain writing you want to keep private.
+
+---
+
+## License
+
+FoolsGold PyWriter is free, open-source software under the **[GNU General Public License v3.0 or later](LICENSE)**. The plain-language **[license summary and terms of use](TERMS-OF-USE.md)** explain it. In short:
+
+- **Your books are yours.** Anything you write with PyWriter can be published and sold, with no restrictions, royalties or attribution. Use it for paid and professional writing as much as you like.
+- **The software is free to use, study, change and share.** Anyone who distributes PyWriter or a modified version, free or paid, must release that version's full source code under the GPL-3.0. Nobody can turn it into closed-source software.
+- **Modified versions** must be marked as modified and must use a different name and icon. The "FoolsGold PyWriter" name and logo aren't licensed for other versions.
+- **No warranty.** Every care has been taken to make PyWriter easy to use, compatible and safe, but problems should be expected, and you use it at your own risk. Keep backups of important work.
+
+Third-party components and downloaded models keep their own licenses. Note that some optional Piper voices don't allow commercial use, which matters if you publish audio made with them.
+
+---
+
+## Code signing policy
+
+Windows releases are built from this repository's source by GitHub Actions and signed through SignPath.
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+*Status: the project has applied to the SignPath Foundation program. Until it's approved, releases are unsigned.*
+
+**Team roles**
+- Committers and reviewers: [sharxbyte](https://github.com/sharxbyte)
+- Approvers: [sharxbyte](https://github.com/sharxbyte)
+
+Changes from contributors outside the team are reviewed before they're merged, and every signing request is approved manually.
+
+**Privacy policy:** This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. PyWriter only connects to the internet when you choose to download a speech model, voice or AI model, from the sources listed under [Downloads, privacy and training data](#downloads-privacy-and-training-data).
 
 ---
 

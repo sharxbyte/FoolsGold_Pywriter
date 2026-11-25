@@ -26,6 +26,8 @@ def _value_text(q, key: str, value: str) -> str:
 
 
 def entity_markdown(store: ProjectStore, lib: Library, e: Entity, heading: str = "###") -> list[str]:
+    from .engine import effective_fields
+    e = Entity(**{**e.__dict__, "fields": effective_fields(store, lib, e)})
     lines = []
     tier = f" · {TIER_LABELS.get(e.tier, e.tier)}" if e.tier else ""
     lines.append(f"{heading} {e.id} — {e.label}{tier}")

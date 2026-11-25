@@ -1,6 +1,8 @@
 """Local AI assistant: explanation, download, enable/disable and delete."""
 from __future__ import annotations
 
+import re
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QDialog, QHBoxLayout, QLabel, QMessageBox,
                                QProgressBar, QPushButton, QRadioButton, QTextBrowser, QVBoxLayout)
@@ -33,7 +35,7 @@ class LocalAIDialog(QDialog):
                               f"of memory while running. {info.note}")
             rb.setProperty("mid", mid)
             rb.setChecked(mid == current)
-            rb.toggled.connect(self._refresh)
+            rb.toggled.connect(lambda on: on and self._model_changed())
             self.group.addButton(rb)
             lay.addWidget(rb)
             if info.page:
@@ -67,9 +69,10 @@ class LocalAIDialog(QDialog):
         self.delete_btn.clicked.connect(self._delete)
         row.addWidget(self.delete_btn)
         row.addStretch(1)
-        close = QPushButton("Not now" if first_run else "Close")
-        close.clicked.connect(self.accept)
-        row.addWidget(close)
+        self.first_run = first_run
+        self.close_btn = QPushButton()
+        self.close_btn.clicked.connect(self.accept)
+        row.addWidget(self.close_btn)
         lay.addLayout(row)
         self._thread: LLMDownloader | None = None
         self._refresh()
@@ -105,6 +108,26 @@ class LocalAIDialog(QDialog):
                 "downloaded (it loads in the background when enabled)"
             on = "ON" if self.enable.isChecked() else "OFF"
             self.status.setText(f"{MODELS[mid].title}: {state}. Assistant is {on}.  File: {model_path(mid)}")
+        # the choice is saved as soon as it's made; the button says what closing will mean
+        using = have and rt and self.enable.isChecked()
+        short = re.sub(r"\s*\(.*?\)", "", MODELS[mid].title)
+        self.close_btn.setText(f"Use {short} and continue" if using else
+                               "Continue without the assistant" if self.first_run else "Close")
+        self.close_btn.setObjectName("primary" if using else "")
+        self.close_btn.setDefault(using)
+        self.close_btn.style().unpolish(self.close_btn)
+        self.close_btn.style().polish(self.close_btn)
+
+    def _model_changed(self) -> None:
+        mid = self._mid()
+        if mid in installed_models():
+            self._apply()       # switching between downloaded models takes effect straight away
+        else:
+            self.enable.blockSignals(True)
+            self.enable.setChecked(False)  # can't use a model that isn't downloaded yet
+            self.enable.blockSignals(False)
+            self._apply()
+        self._refresh()
 
     def _apply(self) -> None:
         self.ctx.set("ai/model", self._mid())

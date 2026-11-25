@@ -21,6 +21,7 @@ import re
 from dataclasses import dataclass, field
 from difflib import get_close_matches
 
+from .engine import effective_fields, ref_questions, set_answer
 from .library import Library
 from .names import needs_spelling_check, parse_spelling, spell_out
 from .store import KINDS, ProjectStore
@@ -117,6 +118,16 @@ FIELD_LEXICON: dict[str, list[tuple[str, str]]] = {
 DEFAULT_FIELD = {"character": "personality", "location": "look", "group": "purpose", "item": "look",
                  "event": "summary", "plot": "summary", "theme": "statement", "topic": "claim",
                  "source": "key_points", "project": "notes_from_talk"}
+# When a project type's interview has no question for a Talk fact (Biography and
+# Non-Fiction people and places are asked fewer questions), file it under the
+# nearest question instead, so it shows up in that interview and on the Edit tab.
+FIELD_FALLBACK: dict[str, dict[str, str]] = {
+    "character": {"eyes": "features", "height": "build", "want": "values", "secret": "relationship_notes",
+                  "skills": "qualifications", "story_role": "role_in_book"},
+    "location": {"population": "community", "governance": "community", "economy": "conditions",
+                 "climate": "conditions", "dangers": "conditions", "smells": "look", "sounds": "look",
+                 "secrets": "significance"},
+}
 REPLACE_FIELDS = {"age", "occupation", "pronouns", "story_role", "height", "level", "place_type"}
 
 LEVEL_WORDS = {
@@ -189,6 +200,27 @@ class Interpreter:
             self.store.log_conversation("pywriter", reply.text)
         return reply
 
+    def kinds(self) -> list[str]:
+        """Kinds of entry this project type has (and shows in the sidebar)."""
+        return [k for k in KINDS if k not in ("project", "scene")
+                and self.lib.pack_for_kind(k, self.store.project_type)]
+
+    def _kind_word(self, kind: str) -> str:
+        if kind == "character":
+            return "character" if self.store.project_type == "Fiction" else "person"
+        return {"location": "place"}.get(kind, KINDS[kind][1].lower())
+
+    def _kind_question(self, name: str) -> str:
+        # the kinds people name in conversation; plot threads and themes can still be added by name
+        common = [k for k in ("character", "location", "group", "item", "event", "topic", "source")
+                  if k in self.kinds() and not (k == "source" and self.store.project_type == "Fiction")]
+        words = [("an " if self._kind_word(k)[0] in "aeiou" else "a ") + self._kind_word(k) for k in common]
+        return f"Is {name} " + ", ".join(words[:-1]) + ", or " + words[-1] + "?"
+
+    def _not_here(self, kind: str) -> str:
+        return (f"{self.store.project_type} projects don't have {KINDS[kind][2].lower()}. You can add "
+                + ", ".join(self._kind_word(k) + "s" for k in self.kinds()) + ".")
+
     def set_focus(self, entity_id: str | None) -> None:
         self.focus = entity_id
 
@@ -212,6 +244,8 @@ class Interpreter:
                      r"(?:\s+(?:named|called)\s+(.+))?$", low)
         if m:
             kind = KIND_WORDS[m.group(1)]
+            if kind not in self.kinds():
+                return Reply(self._not_here(kind))
             name = self._orig(text, m.group(2)) if m.group(2) else ""
             if not name:
                 return Reply(f"Let's add a new {KINDS[kind][1].lower()}. I'll start the interview.",
@@ -244,6 +278,8 @@ class Interpreter:
             target = m.group(1).strip()
             if target in KIND_WORDS:
                 kind = KIND_WORDS[target]
+                if kind not in self.kinds():
+                    return Reply(self._not_here(kind))
                 return Reply(f"Starting a new {KINDS[kind][1].lower()} interview.", start_interview=(kind, None))
             eid = self._lookup(target)
             if eid:
@@ -282,8 +318,10 @@ class Interpreter:
                 return Reply(f"Deleted {e.label}. You can say 'undo' to bring it back.", changed=[p.entity_id])
             return Reply("Okay, I won't delete it.")
         if p.kind == "ask_kind":
-            for w, k in KIND_WORDS.items():
+            for w, k in sorted(KIND_WORDS.items(), key=lambda wk: -len(wk[0])):
                 if re.search(rf"\b{re.escape(w)}\b", low):
+                    if k not in self.kinds():
+                        return Reply(self._not_here(k) + " " + self._kind_question(p.name))
                     self.pending = None
                     return self._create_named(k, p.name, p.sentences)
             self.pending = None
@@ -407,8 +445,8 @@ class Interpreter:
                 res.sentences = sentences[i:]
                 self.pending = res
                 head = (prefix + " " if prefix else "") + (" ".join(done) + " " if done else "")
-                return Reply(head + f"I don't know {res.name} yet. Is {res.name} a character, a place, "
-                                    f"a group, an item, or an event?", changed=changed)
+                return Reply(head + f"I don't know {res.name} yet. " + self._kind_question(res.name),
+                             changed=changed)
             msg, ids, new = res
             if msg:
                 done.append(msg)
@@ -552,7 +590,7 @@ class Interpreter:
                                 self.store.set_field(subj, "level", lvl, source="talk")
                             if not e.fields.get("place_type"):
                                 self.store.set_field(subj, "place_type", self._orig(s, rest), source="talk")
-                            msgs.append(f"{e.label} is {rest}")
+                            msgs.append(f"{e.label} is {'an' if rest[:1] in 'aeiou' else 'a'} {rest}")
                             break
                 if msgs:
                     self.focus = subj
@@ -564,15 +602,30 @@ class Interpreter:
             return subj
         if subj:
             e = self.store.get(subj)
-            key = self._field_for(e.kind, low)
-            value = self._orig_sentence(s)
-            if key == "age":
-                am = re.search(r"\b(\d{1,4})\b", low)
-                if am:
-                    value = am.group(1)
-            self._set_or_append(subj, key, value)
+            # "She has red hair and green eyes" -> hair and eyes, when the parts fit different questions
+            pieces = [p for p in re.split(r",\s*(?:and\s+)?|\s+and\s+", s.strip(" .!?")) if p.strip()]
+            filed: list[tuple[str, str]] = []
+            for i, piece in enumerate(pieces):
+                k = self._field_for(e.kind, piece.lower())
+                if i and k == DEFAULT_FIELD.get(e.kind) and filed:
+                    filed[-1] = (filed[-1][0], filed[-1][1] + " and " + piece.strip())
+                else:
+                    filed.append((k, piece.strip()))
+            if len({k for k, _ in filed}) < 2:
+                filed = [(self._field_for(e.kind, low), s)]
+            keys = []
+            for key, text in filed:
+                value = self._orig_sentence(text)
+                if key == "age":
+                    am = re.search(r"\b(\d{1,4})\b", text)
+                    if am:
+                        value = am.group(1)
+                self._set_or_append(subj, key, value)
+                keys.append(label_for(self.lib, self.store, e.kind, key).lower())
             self.focus = subj
-            return (f"Added to {e.label}'s {label_for(self.lib, self.store, e.kind, key).lower()}.", [subj], [])
+            keys = list(dict.fromkeys(keys))
+            said = keys[0] if len(keys) == 1 else ", ".join(keys[:-1]) + " and " + keys[-1]
+            return (f"Added to {e.label}'s {said}.", [subj], [])
 
         # nothing understood: keep it
         target = self._keep_note(s)
@@ -587,7 +640,10 @@ class Interpreter:
         key = self._match_field_name(e.kind, what)
         if not key:
             key = what.strip().replace(" ", "_")
-        self.store.set_field(eid, key, value.strip(" ."), source="talk")
+        if key in ("name", "tier"):
+            self.store.set_field(eid, key, value.strip(" ."), source="talk")
+        else:
+            set_answer(self.store, self.lib, eid, key, value.strip(" ."), source="talk")
         self.focus = eid
         return Reply(f"Changed {e.label}'s {what} to {value.strip(' .')}.", changed=[eid])
 
@@ -611,13 +667,26 @@ class Interpreter:
         return None
 
     def _field_for(self, kind: str, low: str) -> str:
-        for pat, key in FIELD_LEXICON.get(kind, []):
+        key = DEFAULT_FIELD.get(kind, "notes_from_talk")
+        for pat, k in FIELD_LEXICON.get(kind, []):
             if re.search(pat, low):
-                return key
-        return DEFAULT_FIELD.get(kind, "notes_from_talk")
+                key = k
+                break
+        pack = self.lib.pack_for_kind(kind, self.store.project_type) if kind != "project" else None
+        if pack and not pack.question(key):
+            alt = FIELD_FALLBACK.get(kind, {}).get(key)
+            if alt and pack.question(alt):
+                return alt
+        return key
 
     def _set_or_append(self, eid: str, key: str, value: str) -> None:
         e = self.store.get(eid)
+        pack = self.lib.pack_for_kind(e.kind, self.store.project_type) if e.kind != "project" else None
+        if pack and key in {q.key for q in ref_questions(pack)}:
+            # a relationship answer: add the names as links, exactly as an interview would
+            old = effective_fields(self.store, self.lib, e).get(key, "")
+            set_answer(self.store, self.lib, eid, key, f"{old}, {value}" if old else value, source="talk")
+            return
         old = e.get(key).strip()
         value = value.strip()
         if key in REPLACE_FIELDS or not old:
@@ -691,6 +760,14 @@ class Interpreter:
         eid = self._lookup(p)
         if eid:
             return eid
+        # "The Tavern is a building": a capitalized name after "the" is still a name
+        orig = self._orig(sentence, phrase.strip(" ,"))
+        if re.match(r"^[Tt]he\s+[A-Z]", orig):
+            p = re.sub(r"^the\s+", "", p)
+            phrase = re.sub(r"^[Tt]he\s+", "", phrase.strip(" ,"))
+            eid = self._lookup(p)
+            if eid:
+                return eid
         words = p.split()
         if 1 <= len(words) <= 4 and not any(w in STOP for w in words) and all(re.fullmatch(r"[\w'’.-]+", w) for w in words):
             return _Pending("ask_kind", name=self._clean_name(self._orig(sentence, phrase.strip(" ,"))))
@@ -751,7 +828,7 @@ class Interpreter:
         self._spoken = spoken
         if not actions:
             return None
-        valid_kinds = set(KINDS) - {"project"}
+        valid_kinds = set(self.kinds())
         msgs: list[str] = []
         changed: list[str] = []
         created_chars: list[str] = []
